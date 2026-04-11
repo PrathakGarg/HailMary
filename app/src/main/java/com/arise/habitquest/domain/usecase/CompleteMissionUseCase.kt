@@ -57,17 +57,20 @@ class CompleteMissionUseCase @Inject constructor(
         // Reset miss state (completing a mission clears the warning)
         userRepository.updateMissState(0, false)
 
-        // Check level up
+        // Check achievements first — they may award bonus XP that should count
+        // toward the level-up check below.
         val updatedProfile = profile.copy(xp = newXp, stats = newStats)
-        val levelUpResult = checkLevelUp(updatedProfile)
-
-        // Check achievements
         val finalProfile = updatedProfile.copy(
             streakCurrent = profile.streakCurrent + 1,
             streakBest = newStreakBest,
             totalMissionsCompleted = profile.totalMissionsCompleted + 1
         )
         val newAchievements = unlockAchievement(finalProfile)
+
+        // Check level up AFTER achievements so all XP (mission + achievement bonus)
+        // is already in the DB and a single pass handles every pending level.
+        val profileForLevelCheck = userRepository.getUserProfile() ?: updatedProfile
+        val levelUpResult = checkLevelUp(profileForLevelCheck)
 
         return CompletionResult(
             xpGained = effectiveXp,

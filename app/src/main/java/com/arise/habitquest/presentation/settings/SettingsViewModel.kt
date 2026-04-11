@@ -8,6 +8,7 @@ import com.arise.habitquest.data.local.datastore.OnboardingDataStore
 import com.arise.habitquest.data.time.TimeProvider
 import com.arise.habitquest.domain.model.FocusTheme
 import com.arise.habitquest.domain.model.UserProfile
+import com.arise.habitquest.domain.usecase.RegenerateCurrentMissionsUseCase
 import com.arise.habitquest.domain.repository.UserRepository
 import com.arise.habitquest.worker.DailyResetWorker
 import com.arise.habitquest.worker.MorningNotificationWorker
@@ -31,7 +32,8 @@ class SettingsViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val userRepository: UserRepository,
     private val dataStore: OnboardingDataStore,
-    private val timeProvider: TimeProvider
+    private val timeProvider: TimeProvider,
+    private val regenerateCurrentMissions: RegenerateCurrentMissionsUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SettingsUiState())
@@ -62,6 +64,12 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             val profile = _uiState.value.profile ?: return@launch
             userRepository.upsertProfile(profile.copy(restDay = day))
+        }
+    }
+
+    fun regenerateMissions() {
+        viewModelScope.launch {
+            regenerateCurrentMissions()
         }
     }
 

@@ -36,6 +36,7 @@ fun AchievementScreen(
     viewModel: AchievementViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    var selectedAchievement by remember { mutableStateOf<Achievement?>(null) }
 
     Scaffold(
         containerColor = BackgroundDeep,
@@ -85,12 +86,125 @@ fun AchievementScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     items(state.filteredAchievements) { achievement ->
-                        AchievementCard(achievement = achievement)
+                        AchievementCard(
+                            achievement = achievement,
+                            onClick = { selectedAchievement = achievement }
+                        )
                     }
                 }
             }
         }
     }
+
+    selectedAchievement?.let { achievement ->
+        AchievementDetailDialog(
+            achievement = achievement,
+            onDismiss = { selectedAchievement = null }
+        )
+    }
+}
+
+@Composable
+private fun AchievementDetailDialog(achievement: Achievement, onDismiss: () -> Unit) {
+    val rarityColor = rarityColor(achievement.rarity)
+    val isUnlocked = achievement.isUnlocked
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = BackgroundSurface,
+        title = {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(
+                    achievement.rarity.displayName.uppercase(),
+                    style = AriseTypography.labelSmall.copy(
+                        color = rarityColor,
+                        fontSize = 10.sp,
+                        letterSpacing = 2.sp
+                    )
+                )
+                Text(
+                    if (isUnlocked) achievement.title else "???",
+                    style = AriseTypography.titleMedium.copy(color = TextPrimary)
+                )
+            }
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                if (isUnlocked) {
+                    Text(
+                        achievement.description,
+                        style = AriseTypography.bodyMedium.copy(color = TextPrimary)
+                    )
+                    if (achievement.flavorText.isNotBlank()) {
+                        Text(
+                            "\"${achievement.flavorText}\"",
+                            style = AriseTypography.bodySmall.copy(
+                                color = TextSecondary,
+                                fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
+                            )
+                        )
+                    }
+                    achievement.unlockedAt?.let { instant ->
+                        val date = instant.atZone(ZoneId.systemDefault()).toLocalDate()
+                        Text(
+                            "Unlocked: $date",
+                            style = AriseTypography.labelSmall.copy(color = TextDim, fontSize = 10.sp)
+                        )
+                    }
+                } else {
+                    Text(
+                        "Complete the required objective to unlock this achievement.",
+                        style = AriseTypography.bodyMedium.copy(color = TextSecondary)
+                    )
+                    if (achievement.progressTarget > 1) {
+                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            LinearProgressIndicator(
+                                progress = achievement.progressPercent,
+                                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(50)),
+                                color = rarityColor,
+                                trackColor = BackgroundElevated
+                            )
+                            Text(
+                                "Progress: ${achievement.progressCurrent} / ${achievement.progressTarget}",
+                                style = AriseTypography.labelSmall.copy(color = TextDim, fontSize = 10.sp)
+                            )
+                        }
+                    }
+                }
+                // XP bonus — always visible
+                if (achievement.xpBonus > 0) {
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(GoldCore.copy(alpha = 0.12f))
+                            .border(1.dp, GoldCore.copy(alpha = 0.4f), RoundedCornerShape(8.dp))
+                            .padding(horizontal = 12.dp, vertical = 6.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Icon(
+                                Icons.Filled.Star, null,
+                                tint = GoldCore,
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Text(
+                                if (isUnlocked) "${achievement.xpBonus} XP awarded"
+                                else "+${achievement.xpBonus} XP on unlock",
+                                style = AriseTypography.labelMedium.copy(color = GoldCore)
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("CLOSE", style = AriseTypography.labelMedium.copy(color = PurpleCore))
+            }
+        }
+    )
 }
 
 @Composable
@@ -129,7 +243,7 @@ fun ScrollableFilterRow(
 }
 
 @Composable
-fun AchievementCard(achievement: Achievement) {
+fun AchievementCard(achievement: Achievement, onClick: () -> Unit = {}) {
     val rarityColor = rarityColor(achievement.rarity)
     val isUnlocked = achievement.isUnlocked
 
@@ -137,6 +251,7 @@ fun AchievementCard(achievement: Achievement) {
         modifier = Modifier
             .clip(RoundedCornerShape(14.dp))
             .background(BackgroundCard)
+            .clickable(onClick = onClick)
             .border(
                 1.5.dp,
                 if (isUnlocked) rarityColor else BorderDefault,
@@ -192,10 +307,20 @@ fun AchievementCard(achievement: Achievement) {
             if (isUnlocked) {
                 Text(
                     achievement.description,
-                    style = AriseTypography.bodySmall,
+                    style = AriseTypography.bodySmall.copy(color = TextPrimary),
                     textAlign = TextAlign.Center,
                     maxLines = 2
                 )
+                if (achievement.xpBonus > 0) {
+                    Text(
+                        "+${achievement.xpBonus} XP",
+                        style = AriseTypography.labelSmall.copy(
+                            color = GoldCore,
+                            fontSize = 10.sp,
+                            letterSpacing = 1.sp
+                        )
+                    )
+                }
                 achievement.unlockedAt?.let { instant ->
                     val date = instant.atZone(ZoneId.systemDefault()).toLocalDate()
                     Text(

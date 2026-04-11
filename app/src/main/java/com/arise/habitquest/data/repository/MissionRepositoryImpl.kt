@@ -41,6 +41,9 @@ class MissionRepositoryImpl @Inject constructor(
     override suspend fun insertMission(mission: Mission) =
         dao.insertMission(mapper.toEntity(mission))
 
+    override suspend fun deleteDailyMissionsForDate(date: LocalDate) =
+        dao.deleteDailyMissionsForDate(date.toString())
+
     override suspend fun markCompleted(id: String, streak: Int, usedMini: Boolean) =
         dao.markCompleted(id, timeProvider.nowMillis(), streak, usedMini)
 

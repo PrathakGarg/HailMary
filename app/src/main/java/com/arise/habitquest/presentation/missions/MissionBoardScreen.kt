@@ -1,9 +1,12 @@
 package com.arise.habitquest.presentation.missions
 
 import androidx.compose.foundation.*
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -23,6 +26,7 @@ import com.arise.habitquest.domain.model.Mission
 import com.arise.habitquest.ui.components.*
 import com.arise.habitquest.ui.theme.*
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun MissionBoardScreen(
     onMissionClick: (String) -> Unit,
@@ -32,6 +36,18 @@ fun MissionBoardScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val tabs = listOf("DAILY", "WEEKLY", "BOSS RAID", "PENALTY ZONE")
+    val pagerState = rememberPagerState(initialPage = state.selectedTab, pageCount = { tabs.size })
+
+    LaunchedEffect(state.selectedTab) {
+        if (pagerState.currentPage != state.selectedTab) {
+            pagerState.animateScrollToPage(state.selectedTab)
+        }
+    }
+
+    LaunchedEffect(pagerState) {
+        snapshotFlow { pagerState.currentPage }
+            .collect { page -> viewModel.selectTab(page) }
+    }
 
     Scaffold(
         containerColor = BackgroundDeep,
@@ -49,17 +65,22 @@ fun MissionBoardScreen(
             }
         }
     ) { padding ->
-        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(bottom = bottomBarPadding.calculateBottomPadding())
+        ) {
             // Tab row
             ScrollableTabRow(
-                selectedTabIndex = state.selectedTab,
+                selectedTabIndex = pagerState.currentPage,
                 containerColor = BackgroundSurface,
                 contentColor = PurpleCore,
                 edgePadding = 0.dp,
                 indicator = { tabPositions ->
-                    if (state.selectedTab < tabPositions.size) {
+                    if (pagerState.currentPage < tabPositions.size) {
                         TabRowDefaults.SecondaryIndicator(
-                            modifier = Modifier.tabIndicatorOffset(tabPositions[state.selectedTab]),
+                            modifier = Modifier.tabIndicatorOffset(tabPositions[pagerState.currentPage]),
                             color = PurpleCore
                         )
                     }
@@ -67,13 +88,13 @@ fun MissionBoardScreen(
             ) {
                 tabs.forEachIndexed { index, title ->
                     Tab(
-                        selected = state.selectedTab == index,
+                        selected = pagerState.currentPage == index,
                         onClick = { viewModel.selectTab(index) },
                         text = {
                             Text(
                                 title,
                                 style = AriseTypography.labelSmall.copy(
-                                    color = if (state.selectedTab == index) PurpleCore else TextDim,
+                                    color = if (pagerState.currentPage == index) PurpleCore else TextDim,
                                     fontSize = 10.sp
                                 )
                             )
@@ -82,53 +103,73 @@ fun MissionBoardScreen(
                 }
             }
 
-            // Mission list
-            val missions = when (state.selectedTab) {
-                0 -> state.dailyMissions
-                1 -> state.weeklyMissions
-                2 -> state.bossRaids
-                3 -> state.penaltyZone
-                else -> emptyList()
-            }
-
-            if (missions.isEmpty() && !state.isLoading) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        when (state.selectedTab) {
-                            3 -> "No penalty zone. The System is... satisfied."
-                            else -> "No missions in this category."
-                        },
-                        style = SystemTextStyle,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(40.dp)
-                    )
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier.weight(1f)
+            ) { page ->
+                val missions = when (page) {
+                    0 -> state.dailyMissions
+                    1 -> state.weeklyMissions
+                    2 -> state.bossRaids
+                    3 -> state.penaltyZone
+                    else -> emptyList()
                 }
-            } else {
-                LazyColumn(
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    // Completed missions after active ones
-                    val active = missions.filter { it.isActive }
-                    val done = missions.filter { !it.isActive }
 
-                    if (active.isNotEmpty()) {
-                        item {
-                            SectionLabel("ACTIVE (${active.size})")
-                        }
-                        items(active) { mission ->
-                            MissionCard(mission = mission, onClick = { onMissionClick(mission.id) })
-                        }
-                    }
-                    if (done.isNotEmpty()) {
-                        item { SectionLabel("COMPLETED / FAILED") }
-                        items(done) { mission ->
-                            MissionCard(mission = mission, onClick = { onMissionClick(mission.id) })
-                        }
-                    }
+                MissionListPage(
+                    missions = missions,
+                    selectedTab = page,
+                    isLoading = state.isLoading,
+                    onMissionClick = onMissionClick
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun MissionListPage(
+    missions: List<Mission>,
+    selectedTab: Int,
+    isLoading: Boolean,
+    onMissionClick: (String) -> Unit
+) {
+    if (missions.isEmpty() && !isLoading) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                when (selectedTab) {
+                    3 -> "No penalty zone. The System is... satisfied."
+                    else -> "No missions in this category."
+                }
+                ,
+                style = SystemTextStyle,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(40.dp)
+            )
+        }
+    } else {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            val active = missions.filter { it.isActive }
+            val done = missions.filter { !it.isActive }
+
+            if (active.isNotEmpty()) {
+                item {
+                    SectionLabel("ACTIVE (${active.size})")
+                }
+                items(active) { mission ->
+                    MissionCard(mission = mission, onClick = { onMissionClick(mission.id) })
+                }
+            }
+            if (done.isNotEmpty()) {
+                item { SectionLabel("COMPLETED / FAILED") }
+                items(done) { mission ->
+                    MissionCard(mission = mission, onClick = { onMissionClick(mission.id) })
                 }
             }
         }

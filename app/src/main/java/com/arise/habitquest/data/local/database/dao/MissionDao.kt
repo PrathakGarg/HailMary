@@ -31,6 +31,9 @@ interface MissionDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertMission(mission: MissionEntity)
 
+    @Query("DELETE FROM missions WHERE due_date = :date AND type = 'DAILY'")
+    suspend fun deleteDailyMissionsForDate(date: String)
+
     @Update
     suspend fun updateMission(mission: MissionEntity)
 

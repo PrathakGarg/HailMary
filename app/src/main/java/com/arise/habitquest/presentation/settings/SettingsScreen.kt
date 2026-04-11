@@ -27,6 +27,7 @@ fun SettingsScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val profile = state.profile
+    var showRegenerateDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         containerColor = BackgroundDeep,
@@ -93,6 +94,24 @@ fun SettingsScreen(
                             Icon(Icons.Filled.CheckCircle, null, tint = PurpleCore, modifier = Modifier.size(18.dp))
                         }
                     }
+                }
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    "After changing your rest day, regenerate the current mission day to apply the new schedule immediately.",
+                    style = AriseTypography.bodySmall.copy(color = TextSecondary)
+                )
+                Spacer(Modifier.height(4.dp))
+                OutlinedButton(
+                    onClick = { showRegenerateDialog = true },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = PurpleCore),
+                    border = ButtonDefaults.outlinedButtonBorder.copy(
+                        brush = androidx.compose.ui.graphics.SolidColor(PurpleCore)
+                    )
+                ) {
+                    Icon(Icons.Filled.Refresh, null, modifier = Modifier.size(16.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text("REGENERATE CURRENT MISSIONS", style = AriseTypography.labelMedium)
                 }
             }
 
@@ -175,6 +194,40 @@ fun SettingsScreen(
                     style = SystemTextStyle.copy(color = TextDim, fontSize = 11.sp)
                 )
             }
+        }
+
+        if (showRegenerateDialog) {
+            AlertDialog(
+                onDismissRequest = { showRegenerateDialog = false },
+                containerColor = BackgroundSurface,
+                title = {
+                    Text(
+                        "Regenerate Current Missions?",
+                        style = AriseTypography.titleMedium.copy(color = TextPrimary)
+                    )
+                },
+                text = {
+                    Text(
+                        "This will replace the current session day's daily missions using your updated rest day and current focus settings.",
+                        style = AriseTypography.bodyMedium.copy(color = TextSecondary)
+                    )
+                },
+                dismissButton = {
+                    TextButton(onClick = { showRegenerateDialog = false }) {
+                        Text("CANCEL", style = AriseTypography.labelMedium.copy(color = TextDim))
+                    }
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            showRegenerateDialog = false
+                            viewModel.regenerateMissions()
+                        }
+                    ) {
+                        Text("REGENERATE", style = AriseTypography.labelMedium.copy(color = PurpleCore))
+                    }
+                }
+            )
         }
     }
 }
