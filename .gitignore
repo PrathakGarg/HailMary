@@ -1,0 +1,37 @@
+# Gradle
+.gradle/
+build/
+**/build/
+
+# Local config (contains SDK path, never commit)
+local.properties
+
+# Android Studio / IntelliJ
+*.iml
+.idea/
+.idea/workspace.xml
+.idea/navEditor.xml
+.idea/assetWizardSettings.xml
+.DS_Store
+
+# Keystore files
+*.jks
+*.keystore
+
+# Generated / compiled
+*.class
+*.dex
+*.apk
+*.aab
+*.ap_
+
+# Proguard mapping (keep if you need crash deobfuscation; ignore otherwise)
+/app/proguard-mapping.txt
+
+# Test results and reports
+/app/build/reports/
+/app/build/outputs/androidTest-results/
+
+# NDK / CMake
+.externalNativeBuild/
+.cxx/

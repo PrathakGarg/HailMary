@@ -1,0 +1,62 @@
+package com.arise.habitquest.domain.usecase
+
+import com.arise.habitquest.data.generator.MissionGenerator
+import com.arise.habitquest.data.local.datastore.OnboardingDataStore
+import com.arise.habitquest.data.time.TimeProvider
+import com.arise.habitquest.domain.model.OnboardingAnswers
+import com.arise.habitquest.domain.repository.AchievementRepository
+import com.arise.habitquest.domain.repository.MissionRepository
+import com.arise.habitquest.domain.repository.UserRepository
+import kotlinx.serialization.json.*
+import java.time.LocalDate
+import javax.inject.Inject
+
+class CompleteOnboardingUseCase @Inject constructor(
+    private val userRepository: UserRepository,
+    private val missionRepository: MissionRepository,
+    private val achievementRepository: AchievementRepository,
+    private val generator: MissionGenerator,
+    private val dataStore: OnboardingDataStore,
+    private val seedAchievements: SeedAchievementsUseCase,
+    private val timeProvider: TimeProvider
+) {
+    suspend operator fun invoke(answers: OnboardingAnswers) {
+        val today = timeProvider.today()
+
+        // Generate profile from questionnaire
+        val profile = generator.generateInitialProfile(answers)
+
+        // Compute and store template IDs for future daily generation
+        val templateIds = generator.getTemplateIds(answers)
+        val answersJson = buildJsonObject {
+            put("templateIds", buildJsonArray { templateIds.forEach { add(it) } })
+            put("restDay", answers.restDay.ordinal)
+            put("startingDifficulty", answers.startingDifficulty.name)
+            put("goals", buildJsonArray { answers.goals.forEach { add(it.name) } })
+        }.toString()
+
+        val fullProfile = profile.copy(
+            onboardingComplete = true,
+            onboardingAnswersJson = answersJson
+        )
+        userRepository.upsertProfile(fullProfile)
+
+        // Generate first set of daily missions
+        val initialMissions = generator.generateInitialMissions(answers, today)
+        missionRepository.insertMissions(initialMissions)
+
+        // Generate first weekly boss
+        val weekStart = today.with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY))
+        val boss = generator.generateWeeklyBoss(fullProfile, weekStart)
+        missionRepository.insertMission(boss)
+
+        // Seed achievement catalogue
+        seedAchievements()
+
+        // Mark onboarding complete in DataStore
+        dataStore.setOnboardingComplete(true)
+        dataStore.setHunterName(answers.hunterName)
+        dataStore.setNotificationHour(answers.notificationHour)
+        dataStore.setLastDailyResetDate(today.toString())
+    }
+}

@@ -1,0 +1,231 @@
+package com.arise.habitquest.presentation.achievements
+
+import androidx.compose.foundation.*
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.blur
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.arise.habitquest.domain.model.Achievement
+import com.arise.habitquest.domain.model.Rarity
+import com.arise.habitquest.ui.components.glowEffect
+import com.arise.habitquest.ui.theme.*
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
+
+@Composable
+fun AchievementScreen(
+    onBack: () -> Unit,
+    bottomBarPadding: androidx.compose.foundation.layout.PaddingValues = androidx.compose.foundation.layout.PaddingValues(),
+    viewModel: AchievementViewModel = hiltViewModel()
+) {
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
+
+    Scaffold(
+        containerColor = BackgroundDeep,
+        topBar = {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(BackgroundSurface)
+                    .padding(top = 44.dp, start = 16.dp, end = 16.dp, bottom = 8.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("ACHIEVEMENTS", style = AriseTypography.headlineSmall.copy(letterSpacing = 3.sp))
+                    Text(
+                        "${state.unlockedCount}/${state.totalCount}",
+                        style = AriseTypography.labelMedium.copy(color = GoldCore)
+                    )
+                }
+            }
+        }
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(bottom = bottomBarPadding.calculateBottomPadding())
+        ) {
+            // Filter chips
+            ScrollableFilterRow(
+                filters = AchievementFilter.entries,
+                selected = state.selectedFilter,
+                onSelect = viewModel::setFilter
+            )
+
+            if (state.filteredAchievements.isEmpty()) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("No achievements in this category yet.", style = SystemTextStyle)
+                }
+            } else {
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(2),
+                    contentPadding = PaddingValues(16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(state.filteredAchievements) { achievement ->
+                        AchievementCard(achievement = achievement)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun ScrollableFilterRow(
+    filters: List<AchievementFilter>,
+    selected: AchievementFilter,
+    onSelect: (AchievementFilter) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState())
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        filters.forEach { filter ->
+            val isSelected = filter == selected
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(if (isSelected) PurpleCore else BackgroundCard)
+                    .border(1.dp, if (isSelected) PurpleCore else BorderDefault, RoundedCornerShape(20.dp))
+                    .clickable { onSelect(filter) }
+                    .padding(horizontal = 14.dp, vertical = 6.dp)
+            ) {
+                Text(
+                    filter.label,
+                    style = AriseTypography.labelSmall.copy(
+                        color = if (isSelected) TextPrimary else TextSecondary,
+                        fontSize = 11.sp
+                    )
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun AchievementCard(achievement: Achievement) {
+    val rarityColor = rarityColor(achievement.rarity)
+    val isUnlocked = achievement.isUnlocked
+
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(14.dp))
+            .background(BackgroundCard)
+            .border(
+                1.5.dp,
+                if (isUnlocked) rarityColor else BorderDefault,
+                RoundedCornerShape(14.dp)
+            )
+            .then(if (isUnlocked) Modifier.glowEffect(rarityColor.copy(alpha = 0.25f), 6.dp) else Modifier)
+            .padding(14.dp)
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = if (!isUnlocked) Modifier.blur(if (!isUnlocked) 3.dp else 0.dp) else Modifier
+        ) {
+            // Icon placeholder (using text emoji as icon since Material doesn't have all)
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .size(44.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(rarityColor.copy(alpha = if (isUnlocked) 0.2f else 0.05f))
+            ) {
+                if (isUnlocked) {
+                    Icon(
+                        Icons.Filled.EmojiEvents,
+                        null,
+                        tint = rarityColor,
+                        modifier = Modifier.size(26.dp)
+                    )
+                } else {
+                    Text("?", style = AriseTypography.headlineSmall.copy(color = TextDim))
+                }
+            }
+
+            // Rarity tag
+            Text(
+                achievement.rarity.displayName.uppercase(),
+                style = AriseTypography.labelSmall.copy(
+                    color = rarityColor,
+                    fontSize = 9.sp,
+                    letterSpacing = 1.5.sp
+                )
+            )
+
+            Text(
+                if (isUnlocked) achievement.title else "???",
+                style = AriseTypography.titleSmall.copy(
+                    color = if (isUnlocked) TextPrimary else TextDim
+                ),
+                textAlign = TextAlign.Center,
+                maxLines = 2
+            )
+
+            if (isUnlocked) {
+                Text(
+                    achievement.description,
+                    style = AriseTypography.bodySmall,
+                    textAlign = TextAlign.Center,
+                    maxLines = 2
+                )
+                achievement.unlockedAt?.let { instant ->
+                    val date = instant.atZone(ZoneId.systemDefault()).toLocalDate()
+                    Text(
+                        date.toString(),
+                        style = AriseTypography.labelSmall.copy(color = TextDim, fontSize = 9.sp)
+                    )
+                }
+            } else {
+                // Progress bar for locked achievements
+                if (achievement.progressTarget > 1) {
+                    LinearProgressIndicator(
+                        progress = achievement.progressPercent,
+                        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(50)),
+                        color = rarityColor.copy(alpha = 0.5f),
+                        trackColor = BackgroundElevated
+                    )
+                    Text(
+                        "${achievement.progressCurrent}/${achievement.progressTarget}",
+                        style = AriseTypography.labelSmall.copy(color = TextDim, fontSize = 9.sp)
+                    )
+                }
+            }
+        }
+    }
+}
+
+fun rarityColor(rarity: Rarity): Color = when (rarity) {
+    Rarity.COMMON -> Color(0xFF9CA3AF)
+    Rarity.RARE -> Color(0xFF3B82F6)
+    Rarity.EPIC -> Color(0xFF8B5CF6)
+    Rarity.LEGENDARY -> Color(0xFFF59E0B)
+    Rarity.MYTHIC -> Color(0xFFEC4899)
+}

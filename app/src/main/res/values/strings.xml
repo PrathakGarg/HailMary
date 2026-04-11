@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">ARISE</string>
+    <string name="system_title">SYSTEM</string>
+    <string name="hunter_registration">HUNTER REGISTRATION PROTOCOL</string>
+    <string name="gates_today">TODAY\'S GATES</string>
+    <string name="shadow_army">SHADOW ARMY</string>
+    <string name="status_window">STATUS WINDOW</string>
+    <string name="mission_board">MISSION BOARD</string>
+    <string name="achievements">ACHIEVEMENTS</string>
+    <string name="settings">SETTINGS</string>
+    <string name="arise">ARISE</string>
+    <string name="channel_id_system">arise_system_alerts</string>
+    <string name="channel_name_system">System Alerts</string>
+    <string name="channel_id_reminders">arise_reminders</string>
+    <string name="channel_name_reminders">Mission Reminders</string>
+</resources>

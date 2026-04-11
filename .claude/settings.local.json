@@ -1,0 +1,39 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(java -version)",
+      "Bash(kotlin -version)",
+      "Bash(gradle -version)",
+      "Read(//usr/local/bin/**)",
+      "Read(//Users/gargp/Library/Android/**)",
+      "Bash(gradle --version)",
+      "Bash(gradle wrapper:*)",
+      "Bash(/Users/gargp/.sdkman/candidates/gradle/8.6/bin/gradle wrapper:*)",
+      "Bash(./gradlew compileDebugKotlin)",
+      "Bash(./gradlew compileDebugKotlin --info)",
+      "Bash(./gradlew compileDebugKotlin --stacktrace)",
+      "Read(//Users/gargp/Android/**)",
+      "Read(//Users/gargp/**)",
+      "Bash(./gradlew assembleDebug)",
+      "Bash(/Users/gargp/Library/Android/sdk/build-tools/34.0.0/aapt dump:*)",
+      "Bash(/Users/gargp/Library/Android/sdk/platform-tools/adb devices:*)",
+      "Bash(/Users/gargp/Library/Android/sdk/emulator/emulator -list-avds)",
+      "Bash(/Users/gargp/Library/Android/sdk/emulator/emulator -avd Medium_Phone_API_35 -no-snapshot-load)",
+      "Bash(/Users/gargp/Library/Android/sdk/platform-tools/adb wait-for-device:*)",
+      "Bash(/Users/gargp/Library/Android/sdk/platform-tools/adb shell:*)",
+      "Bash(./gradlew installDebug)",
+      "Bash(/Users/gargp/Library/Android/sdk/platform-tools/adb logcat:*)",
+      "Bash(/Users/gargp/Library/Android/sdk/platform-tools/adb exec-out:*)",
+      "Bash(adb devices:*)",
+      "Bash(emulator -list-avds)",
+      "Bash(~/Library/Android/sdk/emulator/emulator -list-avds)",
+      "Bash(~/Library/Android/sdk/emulator/emulator -avd Medium_Phone_API_35 -no-snapshot-load -no-audio)",
+      "Bash(echo \"Emulator launching, PID: $!\")",
+      "Bash(~/Library/Android/sdk/platform-tools/adb shell:*)",
+      "Bash(~/Library/Android/sdk/platform-tools/adb pull:*)",
+      "Bash(python3 -c ':*)",
+      "Bash(adb shell:*)",
+      "Bash(adb pull:*)"
+    ]
+  }
+}
