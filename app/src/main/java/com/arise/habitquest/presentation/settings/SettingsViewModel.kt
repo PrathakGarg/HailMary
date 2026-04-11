@@ -22,7 +22,7 @@ import javax.inject.Inject
 data class SettingsUiState(
     val profile: UserProfile? = null,
     val notificationHour: Int = 8,
-    val dayStartHour: Int = 4,
+    val dayStartMinutes: Int = 270,
     val activeFocusThemes: Set<FocusTheme> = setOf(FocusTheme.PHYSICAL_PERFORMANCE, FocusTheme.MENTAL_CLARITY),
     val isSaved: Boolean = false
 )
@@ -44,16 +44,16 @@ class SettingsViewModel @Inject constructor(
             combine(
                 userRepository.observeUserProfile(),
                 dataStore.notificationHour,
-                dataStore.dayStartHour,
+                dataStore.dayStartMinutes,
                 dataStore.focusThemes
-            ) { profile, notifHour, dayHour, themeNames ->
+            ) { profile, notifHour, dayStartMinutes, themeNames ->
                 val themes = themeNames.mapNotNull { name ->
                     FocusTheme.entries.find { it.name == name }
                 }.toSet().ifEmpty { setOf(FocusTheme.PHYSICAL_PERFORMANCE, FocusTheme.MENTAL_CLARITY) }
                 SettingsUiState(
                     profile = profile,
                     notificationHour = notifHour,
-                    dayStartHour = dayHour,
+                    dayStartMinutes = dayStartMinutes,
                     activeFocusThemes = themes
                 )
             }.collect { _uiState.value = it }
@@ -73,13 +73,13 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    fun setDayStartHour(hour: Int) {
+    fun setDayStartMinutes(minutes: Int) {
         viewModelScope.launch {
-            dataStore.setDayStartHour(hour)
-            timeProvider.setResetTime(hour, minute = 0)
+            dataStore.setDayStartMinutes(minutes)
+            timeProvider.setDayStartMinutes(minutes)
             val wm = WorkManager.getInstance(context)
-            DailyResetWorker.schedule(wm, hour, resetMinute = 0)
-            PreResetReminderWorker.schedule(wm, hour, resetMinute = 0)
+            DailyResetWorker.schedule(wm, timeProvider.resetHour, timeProvider.resetMinute)
+            PreResetReminderWorker.schedule(wm, timeProvider.resetHour, timeProvider.resetMinute)
         }
     }
 

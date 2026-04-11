@@ -19,6 +19,8 @@ import com.arise.habitquest.domain.model.FocusTheme
 import com.arise.habitquest.ui.components.glowEffect
 import com.arise.habitquest.ui.theme.*
 import java.time.DayOfWeek
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
 
 @Composable
 fun SettingsScreen(
@@ -117,15 +119,17 @@ fun SettingsScreen(
 
             // ── Day start time ────────────────────────────────────────────
             SettingsSection("DAY START TIME") {
+                val slot = state.dayStartMinutes / 30f
+                val formattedTime = formatDayStartTime(state.dayStartMinutes)
                 Text(
-                    "New missions unlock at ${state.dayStartHour}:00. Previous day's missions expire at this time.",
+                    "New missions unlock at $formattedTime. Previous day's missions expire at this time.",
                     style = AriseTypography.bodySmall.copy(color = TextSecondary)
                 )
                 Slider(
-                    value = state.dayStartHour.toFloat(),
-                    onValueChange = { viewModel.setDayStartHour(it.toInt()) },
-                    valueRange = 1f..6f,
-                    steps = 4,
+                    value = slot,
+                    onValueChange = { viewModel.setDayStartMinutes((it.toInt() * 30)) },
+                    valueRange = 0f..47f,
+                    steps = 46,
                     colors = SliderDefaults.colors(
                         thumbColor = PurpleCore,
                         activeTrackColor = PurpleCore,
@@ -133,8 +137,8 @@ fun SettingsScreen(
                     )
                 )
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text("1:00 AM", style = AriseTypography.labelSmall.copy(color = TextDim, fontSize = 9.sp))
-                    Text("6:00 AM", style = AriseTypography.labelSmall.copy(color = TextDim, fontSize = 9.sp))
+                    Text("12:00 AM", style = AriseTypography.labelSmall.copy(color = TextDim, fontSize = 9.sp))
+                    Text("11:30 PM", style = AriseTypography.labelSmall.copy(color = TextDim, fontSize = 9.sp))
                 }
             }
 
@@ -230,6 +234,12 @@ fun SettingsScreen(
             )
         }
     }
+}
+
+private fun formatDayStartTime(minutes: Int): String {
+    val normalized = (minutes / 30).coerceIn(0, 47) * 30
+    val t = LocalTime.of(normalized / 60, normalized % 60)
+    return t.format(DateTimeFormatter.ofPattern("h:mm a"))
 }
 
 @Composable

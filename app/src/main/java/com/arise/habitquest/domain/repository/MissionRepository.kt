@@ -14,6 +14,7 @@ interface MissionRepository {
     suspend fun insertMissions(missions: List<Mission>)
     suspend fun insertMission(mission: Mission)
     suspend fun deleteDailyMissionsForDate(date: LocalDate)
+    suspend fun failActiveDailyMissionsForDate(date: LocalDate)
     suspend fun markCompleted(id: String, streak: Int, usedMini: Boolean)
     suspend fun markFailed(id: String)
     suspend fun markSkipped(id: String)

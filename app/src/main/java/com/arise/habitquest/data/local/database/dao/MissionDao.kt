@@ -34,6 +34,9 @@ interface MissionDao {
     @Query("DELETE FROM missions WHERE due_date = :date AND type = 'DAILY'")
     suspend fun deleteDailyMissionsForDate(date: String)
 
+    @Query("UPDATE missions SET is_failed = 1, streak_count = 0 WHERE due_date = :date AND type = 'DAILY' AND is_completed = 0 AND is_failed = 0 AND is_skipped = 0")
+    suspend fun failActiveDailyMissionsForDate(date: String)
+
     @Update
     suspend fun updateMission(mission: MissionEntity)
 

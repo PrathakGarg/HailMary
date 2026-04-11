@@ -30,7 +30,8 @@ class OnboardingDataStore @Inject constructor(
         val FOCUS_THEMES = stringPreferencesKey("focus_themes")        // comma-separated FocusTheme names
         val PENDING_RANK_UP = stringPreferencesKey("pending_rank_up")  // rank name or "" if none
         val LAST_MONTHLY_REPORT = stringPreferencesKey("last_monthly_report") // "YYYY-MM" of last sent
-        val DAY_START_HOUR = intPreferencesKey("day_start_hour")               // hour at which the app-day rolls over (default 4)
+        val DAY_START_MINUTES = intPreferencesKey("day_start_minutes")         // minute-of-day, 30-min granularity
+        val DAY_START_HOUR = intPreferencesKey("day_start_hour")               // legacy key fallback
     }
 
     val onboardingComplete: Flow<Boolean> = context.dataStore.data
@@ -105,12 +106,20 @@ class OnboardingDataStore @Inject constructor(
         }
     }
 
-    val dayStartHour: Flow<Int> = context.dataStore.data
-        .map { prefs -> prefs[Keys.DAY_START_HOUR] ?: 4 }
+    val dayStartMinutes: Flow<Int> = context.dataStore.data
+        .map { prefs ->
+            // Backward compatibility for existing installs that only have the legacy hour key.
+            val minutes = prefs[Keys.DAY_START_MINUTES]
+                ?: (prefs[Keys.DAY_START_HOUR] ?: 4) * 60
+            (minutes / 30).coerceIn(0, 47) * 30
+        }
 
-    suspend fun setDayStartHour(hour: Int) {
+    suspend fun setDayStartMinutes(minutes: Int) {
+        val normalized = (minutes / 30).coerceIn(0, 47) * 30
         context.dataStore.edit { prefs ->
-            prefs[Keys.DAY_START_HOUR] = hour
+            prefs[Keys.DAY_START_MINUTES] = normalized
+            // Keep legacy key in sync for any older call-sites not yet migrated.
+            prefs[Keys.DAY_START_HOUR] = normalized / 60
         }
     }
 }

@@ -10,27 +10,19 @@ import java.net.DatagramSocket
 import java.net.InetAddress
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.LocalTime
 import java.time.ZoneId
+import java.time.ZonedDateTime
 import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Tamper-resistant time provider.
+ * Minimal time engine with tamper protection.
  *
- * On every [sync] call it queries pool.ntp.org via SNTP and stores a
- * (networkTimeMs, elapsedRealtimeMs) anchor pair.  Subsequent calls to
- * [nowMillis] and [today] compute current time from:
- *
- *   networkTimeMs + (SystemClock.elapsedRealtime() – elapsedRealtimeMs)
- *
- * Because elapsedRealtime() is a monotonic clock rooted at device boot it
- * cannot be modified by the user — changing Settings → Date & Time only
- * affects System.currentTimeMillis().  This means even if the device is
- * offline the anchor stays accurate indefinitely, and any manual clock
- * adjustment is silently ignored.
- *
- * If no anchor has ever been saved and the device is offline, we fall back
- * to the device clock (first-launch, airplane mode edge case).
+ * - Trusted clock: SNTP anchor + elapsedRealtime() drift-free progression.
+ * - Day boundary: single minute-of-day value in 30-minute increments.
+ * - Session day: before day start => previous date; at/after => current date.
  */
 @Singleton
 class TimeProvider @Inject constructor(
@@ -42,17 +34,26 @@ class TimeProvider @Inject constructor(
     @Volatile private var anchorNetworkMs: Long = prefs.getLong(KEY_NETWORK_MS, 0L)
     @Volatile private var anchorElapsedMs: Long = prefs.getLong(KEY_ELAPSED_MS, 0L)
 
-    // Reset time — the hour/minute at which the app day rolls over.
-    // Cached in SharedPrefs so sessionDay() is always synchronous.
-    @Volatile var resetHour: Int = prefs.getInt(KEY_RESET_HOUR, DEFAULT_RESET_HOUR)
-        private set
-    @Volatile var resetMinute: Int = prefs.getInt(KEY_RESET_MINUTE, DEFAULT_RESET_MINUTE)
+    @Volatile
+    var dayStartMinutes: Int = normalizeToHalfHour(prefs.getInt(KEY_DAY_START_MINUTES, DEFAULT_DAY_START_MINUTES))
         private set
 
+    val resetHour: Int get() = dayStartMinutes / 60
+    val resetMinute: Int get() = dayStartMinutes % 60
+
+    fun setDayStartMinutes(minutes: Int) {
+        val normalized = normalizeToHalfHour(minutes)
+        dayStartMinutes = normalized
+        prefs.edit()
+            .putInt(KEY_DAY_START_MINUTES, normalized)
+            .putInt(KEY_RESET_HOUR, normalized / 60)
+            .putInt(KEY_RESET_MINUTE, normalized % 60)
+            .apply()
+    }
+
+    // Compatibility shim for existing call-sites.
     fun setResetTime(hour: Int, minute: Int = 0) {
-        resetHour = hour
-        resetMinute = minute
-        prefs.edit().putInt(KEY_RESET_HOUR, hour).putInt(KEY_RESET_MINUTE, minute).apply()
+        setDayStartMinutes(hour * 60 + minute)
     }
 
     init {
@@ -69,38 +70,35 @@ class TimeProvider @Inject constructor(
         System.currentTimeMillis()
     }
 
-    /** Current local date according to the tamper-resistant clock. */
-    fun today(): LocalDate = Instant.ofEpochMilli(nowMillis())
-        .atZone(ZoneId.systemDefault())
-        .toLocalDate()
+    fun trustedNow(): ZonedDateTime = Instant.ofEpochMilli(nowMillis()).atZone(ZoneId.systemDefault())
+
+    /** Current local date according to the trusted clock. */
+    fun today(): LocalDate = trustedNow().toLocalDate()
 
     /**
-     * The "session day" — the date the app considers active for missions.
-     *
-     * The day rolls over at [resetHour]:[resetMinute] (default 04:30).
-     * Between midnight and that boundary the user is still completing the
-     * previous calendar day's missions, so this returns yesterday.
-     * At or after the boundary it matches [today].
+     * Date currently active for missions.
      */
     fun sessionDay(): LocalDate {
-        val zdt = Instant.ofEpochMilli(nowMillis()).atZone(ZoneId.systemDefault())
-        val t = zdt.toLocalTime()
-        return if (t.hour < resetHour || (t.hour == resetHour && t.minute < resetMinute)) {
-            zdt.toLocalDate().minusDays(1)
+        val now = trustedNow()
+        return if (now.toLocalTime() < dayStartTime()) {
+            now.toLocalDate().minusDays(1)
         } else {
-            zdt.toLocalDate()
+            now.toLocalDate()
         }
     }
 
+    fun nextDayStartDateTime(): LocalDateTime {
+        val now = trustedNow().toLocalDateTime()
+        val startToday = now.toLocalDate().atTime(dayStartTime())
+        return if (now < startToday) startToday else startToday.plusDays(1)
+    }
+
     /**
-     * Minutes remaining until the next day reset boundary.
-     * Used by the UI to show "time almost up" warnings.
+     * Minutes until the next day start boundary.
      */
     fun minutesUntilReset(): Long {
-        val now = Instant.ofEpochMilli(nowMillis()).atZone(ZoneId.systemDefault()).toLocalDateTime()
-        val resetToday = now.toLocalDate().atTime(resetHour, resetMinute)
-        val nextReset = if (now.isBefore(resetToday)) resetToday else resetToday.plusDays(1)
-        return java.time.Duration.between(now, nextReset).toMinutes()
+        val now = trustedNow().toLocalDateTime()
+        return java.time.Duration.between(now, nextDayStartDateTime()).toMinutes()
     }
 
     /**
@@ -163,10 +161,12 @@ class TimeProvider @Inject constructor(
         private const val PREFS_NAME = "arise_time_anchor"
         private const val KEY_NETWORK_MS = "network_ms"
         private const val KEY_ELAPSED_MS = "elapsed_ms"
+        private const val KEY_DAY_START_MINUTES = "day_start_minutes"
         private const val KEY_RESET_HOUR = "reset_hour"
         private const val KEY_RESET_MINUTE = "reset_minute"
         const val DEFAULT_RESET_HOUR = 4
         const val DEFAULT_RESET_MINUTE = 30
+        const val DEFAULT_DAY_START_MINUTES = DEFAULT_RESET_HOUR * 60 + DEFAULT_RESET_MINUTE
         private const val NTP_HOST = "pool.ntp.org"
         private const val NTP_PORT = 123
         private const val NTP_TIMEOUT_MS = 5_000
@@ -184,5 +184,12 @@ class TimeProvider @Inject constructor(
             instance ?: synchronized(this) {
                 instance ?: TimeProvider(context.applicationContext).also { instance = it }
             }
+    }
+
+    private fun dayStartTime(): LocalTime = LocalTime.of(resetHour, resetMinute)
+
+    private fun normalizeToHalfHour(minutes: Int): Int {
+        val clamped = minutes.coerceIn(0, 23 * 60 + 30)
+        return (clamped / 30) * 30
     }
 }

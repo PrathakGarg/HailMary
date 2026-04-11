@@ -23,17 +23,20 @@ class ApplyDailyResetUseCase @Inject constructor(
 ) {
     suspend operator fun invoke() {
         val profile = userRepository.getUserProfile() ?: return
-        val today = timeProvider.today()
-        val yesterday = today.minusDays(1)
-        val isRestDay = today.dayOfWeek == DayOfWeek.of(((profile.restDay % 7) + 1).coerceIn(1, 7))
+        val sessionDate = timeProvider.sessionDay()
+        val expiringDate = sessionDate.minusDays(1)
+        val isRestDay = sessionDate.dayOfWeek == DayOfWeek.of(((profile.restDay % 7) + 1).coerceIn(1, 7))
 
-        // Archive yesterday's missions into daily log
-        val yesterdayMissions = missionRepository.getMissionsForDate(yesterday)
-        val completed = yesterdayMissions.filter { it.isCompleted }
-        val failed = yesterdayMissions.filter { it.isFailed }
-        val skipped = yesterdayMissions.filter { it.isSkipped }
-        val totalYesterday = yesterdayMissions.size
-        val completionRate = if (totalYesterday > 0) completed.size.toFloat() / totalYesterday else 0f
+        // Any active daily gate from the expiring session date becomes failed at rollover.
+        missionRepository.failActiveDailyMissionsForDate(expiringDate)
+
+        // Archive expiring day's missions into daily log
+        val expiringMissions = missionRepository.getMissionsForDate(expiringDate)
+        val completed = expiringMissions.filter { it.isCompleted }
+        val failed = expiringMissions.filter { it.isFailed }
+        val skipped = expiringMissions.filter { it.isSkipped }
+        val totalExpiring = expiringMissions.size
+        val completionRate = if (totalExpiring > 0) completed.size.toFloat() / totalExpiring else 0f
 
         val xpGained = completed.sumOf { it.effectiveXpReward }
         val xpLost = failed.sumOf { it.penaltyXp }
@@ -43,7 +46,7 @@ class ApplyDailyResetUseCase @Inject constructor(
         val systemMessage = generator.generateSystemMessage(completionRate, profile.streakCurrent, profile.rank)
 
         val log = DailyLogEntity(
-            date = yesterday.toString(),
+            date = expiringDate.toString(),
             completedIdsJson = completed.map { it.id }.toString(),
             failedIdsJson = failed.map { it.id }.toString(),
             skippedIdsJson = skipped.map { it.id }.toString(),
@@ -54,7 +57,7 @@ class ApplyDailyResetUseCase @Inject constructor(
             rankSnapshot = profile.rank.name,
             levelSnapshot = profile.level,
             completionRate = completionRate,
-            totalMissions = totalYesterday,
+            totalMissions = totalExpiring,
             systemMessage = systemMessage,
             wasRestDay = isRestDay
         )
@@ -87,15 +90,15 @@ class ApplyDailyResetUseCase @Inject constructor(
         // Increment day count
         userRepository.incrementDayCount()
 
-        // Generate today's missions (skip if rest day)
+        // Generate the active session day's missions (skip if rest day)
         if (!isRestDay) {
-            generateDailyMissions(profile, today)
+            generateDailyMissions(profile, sessionDate)
         }
 
         // Prune missions older than 30 days
-        missionRepository.pruneOldDailyMissions(today.minusDays(30))
+        missionRepository.pruneOldDailyMissions(sessionDate.minusDays(30))
 
         // Record last reset date
-        dataStore.setLastDailyResetDate(today.toString())
+        dataStore.setLastDailyResetDate(sessionDate.toString())
     }
 }
