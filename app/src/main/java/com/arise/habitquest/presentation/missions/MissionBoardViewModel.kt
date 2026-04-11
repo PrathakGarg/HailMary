@@ -8,6 +8,7 @@ import com.arise.habitquest.domain.model.MissionType
 import com.arise.habitquest.domain.repository.MissionRepository
 import com.arise.habitquest.domain.repository.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.time.DayOfWeek
@@ -35,28 +36,42 @@ class MissionBoardViewModel @Inject constructor(
     val uiState: StateFlow<MissionBoardUiState> = _uiState.asStateFlow()
 
     init {
-        val today = timeProvider.sessionDay()
-        val weekStart = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
-        val weekEnd = weekStart.plusDays(6)
+        observeSessionDay()
+    }
 
+    // Re-check the session day every minute so the board switches automatically
+    // when the day rolls over at the configured reset time.
+    private fun observeSessionDay() {
         viewModelScope.launch {
-            combine(
-                missionRepository.observeMissionsForDate(today),
-                missionRepository.observeWeeklyMissions(weekStart, weekEnd),
-                missionRepository.observeBossRaids(),
-                missionRepository.observePenaltyZone()
-            ) { daily, weekly, boss, penalty ->
-                MissionBoardUiState(
-                    dailyMissions = daily.filter { it.type == MissionType.DAILY },
-                    weeklyMissions = weekly,
-                    bossRaids = boss,
-                    penaltyZone = penalty,
-                    isLoading = false
-                )
-            }.collect { newState ->
-                _uiState.update { current ->
-                    newState.copy(selectedTab = current.selectedTab)
+            var currentDate: LocalDate? = null
+            var boardJob: kotlinx.coroutines.Job? = null
+            while (true) {
+                val today = timeProvider.sessionDay()
+                if (today != currentDate) {
+                    currentDate = today
+                    val weekStart = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+                    val weekEnd = weekStart.plusDays(6)
+                    boardJob?.cancel()
+                    boardJob = launch {
+                        combine(
+                            missionRepository.observeMissionsForDate(today),
+                            missionRepository.observeWeeklyMissions(weekStart, weekEnd),
+                            missionRepository.observeBossRaids(),
+                            missionRepository.observePenaltyZone()
+                        ) { daily, weekly, boss, penalty ->
+                            MissionBoardUiState(
+                                dailyMissions = daily.filter { it.type == MissionType.DAILY },
+                                weeklyMissions = weekly,
+                                bossRaids = boss,
+                                penaltyZone = penalty,
+                                isLoading = false
+                            )
+                        }.collect { newState ->
+                            _uiState.update { current -> newState.copy(selectedTab = current.selectedTab) }
+                        }
+                    }
                 }
+                delay(60_000L)
             }
         }
     }

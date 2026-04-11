@@ -96,6 +96,29 @@ fun SettingsScreen(
                 }
             }
 
+            // ── Day start time ────────────────────────────────────────────
+            SettingsSection("DAY START TIME") {
+                Text(
+                    "New missions unlock at ${state.dayStartHour}:00. Previous day's missions expire at this time.",
+                    style = AriseTypography.bodySmall.copy(color = TextSecondary)
+                )
+                Slider(
+                    value = state.dayStartHour.toFloat(),
+                    onValueChange = { viewModel.setDayStartHour(it.toInt()) },
+                    valueRange = 1f..6f,
+                    steps = 4,
+                    colors = SliderDefaults.colors(
+                        thumbColor = PurpleCore,
+                        activeTrackColor = PurpleCore,
+                        inactiveTrackColor = BorderDefault
+                    )
+                )
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text("1:00 AM", style = AriseTypography.labelSmall.copy(color = TextDim, fontSize = 9.sp))
+                    Text("6:00 AM", style = AriseTypography.labelSmall.copy(color = TextDim, fontSize = 9.sp))
+                }
+            }
+
             // ── Notification time ─────────────────────────────────────────
             SettingsSection("MORNING NOTIFICATION") {
                 Text(

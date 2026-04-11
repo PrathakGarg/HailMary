@@ -42,6 +42,19 @@ class TimeProvider @Inject constructor(
     @Volatile private var anchorNetworkMs: Long = prefs.getLong(KEY_NETWORK_MS, 0L)
     @Volatile private var anchorElapsedMs: Long = prefs.getLong(KEY_ELAPSED_MS, 0L)
 
+    // Reset time — the hour/minute at which the app day rolls over.
+    // Cached in SharedPrefs so sessionDay() is always synchronous.
+    @Volatile var resetHour: Int = prefs.getInt(KEY_RESET_HOUR, DEFAULT_RESET_HOUR)
+        private set
+    @Volatile var resetMinute: Int = prefs.getInt(KEY_RESET_MINUTE, DEFAULT_RESET_MINUTE)
+        private set
+
+    fun setResetTime(hour: Int, minute: Int = 0) {
+        resetHour = hour
+        resetMinute = minute
+        prefs.edit().putInt(KEY_RESET_HOUR, hour).putInt(KEY_RESET_MINUTE, minute).apply()
+    }
+
     init {
         // Expose singleton for widget code running outside Hilt scope
         instance = this
@@ -64,18 +77,30 @@ class TimeProvider @Inject constructor(
     /**
      * The "session day" — the date the app considers active for missions.
      *
-     * Missions reset at 04:30. Between midnight and 04:30 the user is still
-     * completing the previous day's missions, so this returns yesterday.
-     * At or after 04:30 it matches [today].
+     * The day rolls over at [resetHour]:[resetMinute] (default 04:30).
+     * Between midnight and that boundary the user is still completing the
+     * previous calendar day's missions, so this returns yesterday.
+     * At or after the boundary it matches [today].
      */
     fun sessionDay(): LocalDate {
         val zdt = Instant.ofEpochMilli(nowMillis()).atZone(ZoneId.systemDefault())
         val t = zdt.toLocalTime()
-        return if (t.hour < 4 || (t.hour == 4 && t.minute < 30)) {
+        return if (t.hour < resetHour || (t.hour == resetHour && t.minute < resetMinute)) {
             zdt.toLocalDate().minusDays(1)
         } else {
             zdt.toLocalDate()
         }
+    }
+
+    /**
+     * Minutes remaining until the next day reset boundary.
+     * Used by the UI to show "time almost up" warnings.
+     */
+    fun minutesUntilReset(): Long {
+        val now = Instant.ofEpochMilli(nowMillis()).atZone(ZoneId.systemDefault()).toLocalDateTime()
+        val resetToday = now.toLocalDate().atTime(resetHour, resetMinute)
+        val nextReset = if (now.isBefore(resetToday)) resetToday else resetToday.plusDays(1)
+        return java.time.Duration.between(now, nextReset).toMinutes()
     }
 
     /**
@@ -138,6 +163,10 @@ class TimeProvider @Inject constructor(
         private const val PREFS_NAME = "arise_time_anchor"
         private const val KEY_NETWORK_MS = "network_ms"
         private const val KEY_ELAPSED_MS = "elapsed_ms"
+        private const val KEY_RESET_HOUR = "reset_hour"
+        private const val KEY_RESET_MINUTE = "reset_minute"
+        const val DEFAULT_RESET_HOUR = 4
+        const val DEFAULT_RESET_MINUTE = 30
         private const val NTP_HOST = "pool.ntp.org"
         private const val NTP_PORT = 123
         private const val NTP_TIMEOUT_MS = 5_000

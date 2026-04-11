@@ -78,6 +78,16 @@ fun HomeScreen(
 
                 Spacer(Modifier.height(20.dp))
 
+                // ── Time-almost-up warning ──────────────────────────────────
+                val hasIncomplete = state.todayMissions.any { it.isActive }
+                if (state.minutesUntilReset < 120 && hasIncomplete) {
+                    TimeRemainingWarning(
+                        minutesUntilReset = state.minutesUntilReset,
+                        modifier = Modifier.padding(horizontal = 20.dp)
+                    )
+                    Spacer(Modifier.height(12.dp))
+                }
+
                 // ── Today's gates section ───────────────────────────────────
                 Row(
                     modifier = Modifier
@@ -305,6 +315,47 @@ fun StatChip(label: String, value: String, accentColor: Color, modifier: Modifie
             Text(label, style = AriseTypography.labelSmall.copy(color = TextDim, fontSize = 9.sp, letterSpacing = 1.sp))
             Spacer(Modifier.height(2.dp))
             Text(value, style = AriseTypography.titleMedium.copy(color = accentColor))
+        }
+    }
+}
+
+@Composable
+fun TimeRemainingWarning(minutesUntilReset: Long, modifier: Modifier = Modifier) {
+    val isUrgent = minutesUntilReset < 30
+    val accentColor = if (isUrgent) CrimsonCore else GoldCore
+    val hours = minutesUntilReset / 60
+    val mins = minutesUntilReset % 60
+    val timeStr = when {
+        hours > 0 -> "${hours}h ${mins}m"
+        else -> "${mins}m"
+    }
+    val message = if (isUrgent)
+        "CRITICAL — $timeStr REMAINING. CLOSE YOUR GATES NOW."
+    else
+        "$timeStr REMAINING — INCOMPLETE GATES DETECTED"
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(8.dp))
+            .background(accentColor.copy(alpha = 0.08f))
+            .border(1.dp, accentColor.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
+            .padding(horizontal = 12.dp, vertical = 8.dp)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Icon(
+                Icons.Filled.Warning,
+                contentDescription = null,
+                tint = accentColor,
+                modifier = Modifier.size(16.dp)
+            )
+            Text(
+                message,
+                style = AriseTypography.labelSmall.copy(color = accentColor, letterSpacing = 1.sp)
+            )
         }
     }
 }

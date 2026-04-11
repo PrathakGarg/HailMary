@@ -50,10 +50,9 @@ class DailyResetWorker @AssistedInject constructor(
         private val RESET_HOUR = 4
         private val RESET_MINUTE = 30
 
-        fun schedule(workManager: WorkManager) {
+        fun schedule(workManager: WorkManager, resetHour: Int = 4, resetMinute: Int = 30) {
             val now = LocalDateTime.now()
-            val todayReset = now.toLocalDate().atTime(RESET_HOUR, RESET_MINUTE)
-            // If today's 4:30 AM has already passed, target tomorrow's
+            val todayReset = now.toLocalDate().atTime(resetHour, resetMinute)
             val nextReset = if (now.isBefore(todayReset)) todayReset else todayReset.plusDays(1)
             val delay = nextReset.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli() -
                     System.currentTimeMillis()

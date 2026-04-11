@@ -30,6 +30,7 @@ class OnboardingDataStore @Inject constructor(
         val FOCUS_THEMES = stringPreferencesKey("focus_themes")        // comma-separated FocusTheme names
         val PENDING_RANK_UP = stringPreferencesKey("pending_rank_up")  // rank name or "" if none
         val LAST_MONTHLY_REPORT = stringPreferencesKey("last_monthly_report") // "YYYY-MM" of last sent
+        val DAY_START_HOUR = intPreferencesKey("day_start_hour")               // hour at which the app-day rolls over (default 4)
     }
 
     val onboardingComplete: Flow<Boolean> = context.dataStore.data
@@ -101,6 +102,15 @@ class OnboardingDataStore @Inject constructor(
     suspend fun setLastMonthlyReport(yearMonth: String) {
         context.dataStore.edit { prefs ->
             prefs[Keys.LAST_MONTHLY_REPORT] = yearMonth
+        }
+    }
+
+    val dayStartHour: Flow<Int> = context.dataStore.data
+        .map { prefs -> prefs[Keys.DAY_START_HOUR] ?: 4 }
+
+    suspend fun setDayStartHour(hour: Int) {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.DAY_START_HOUR] = hour
         }
     }
 }

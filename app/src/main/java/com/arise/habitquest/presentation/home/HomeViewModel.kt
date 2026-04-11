@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.arise.habitquest.data.time.TimeProvider
 import com.arise.habitquest.domain.model.Mission
+import com.arise.habitquest.domain.model.MissionType
 import com.arise.habitquest.domain.model.UserProfile
 import com.arise.habitquest.data.local.datastore.OnboardingDataStore
 import com.arise.habitquest.domain.repository.MissionRepository
@@ -12,6 +13,7 @@ import com.arise.habitquest.domain.usecase.CompleteMissionUseCase
 import com.arise.habitquest.domain.usecase.CompletionResult
 import com.arise.habitquest.domain.usecase.FailMissionUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -26,6 +28,7 @@ data class HomeUiState(
     val notificationMessage: String = "",
     val pendingRankUp: String = "",
     val currentDate: LocalDate = LocalDate.now(),
+    val minutesUntilReset: Long = Long.MAX_VALUE,
     val isLoading: Boolean = true
 ) {
     val completedCount: Int get() = todayMissions.count { it.isCompleted }
@@ -47,11 +50,9 @@ class HomeViewModel @Inject constructor(
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
     init {
-        val today = timeProvider.sessionDay()
-        _uiState.update { it.copy(currentDate = today) }
         observeProfile()
-        observeMissions(today)
         observePendingRankUp()
+        observeSessionDay()
     }
 
     private fun observeProfile() {
@@ -62,10 +63,29 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    private fun observeMissions(today: LocalDate) {
+    // Re-check the session day every minute. Switches the mission subscription
+    // automatically when the day rolls over at the configured reset time.
+    private fun observeSessionDay() {
         viewModelScope.launch {
-            missionRepository.observeMissionsForDate(today).collect { missions ->
-                _uiState.update { it.copy(todayMissions = missions) }
+            var currentDate: LocalDate? = null
+            var missionJob: kotlinx.coroutines.Job? = null
+            while (true) {
+                val sessionDay = timeProvider.sessionDay()
+                val mins = timeProvider.minutesUntilReset()
+                _uiState.update { it.copy(minutesUntilReset = mins) }
+                if (sessionDay != currentDate) {
+                    currentDate = sessionDay
+                    _uiState.update { it.copy(currentDate = sessionDay) }
+                    missionJob?.cancel()
+                    missionJob = launch {
+                        missionRepository.observeMissionsForDate(sessionDay).collect { missions ->
+                            // Only show DAILY missions on the home screen; boss/weekly/penalty
+                            // have their own dedicated tabs on the Mission Board.
+                            _uiState.update { it.copy(todayMissions = missions.filter { m -> m.type == MissionType.DAILY }) }
+                        }
+                    }
+                }
+                delay(60_000L) // check once per minute
             }
         }
     }

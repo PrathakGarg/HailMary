@@ -23,6 +23,10 @@ class GenerateDailyMissionsUseCase @Inject constructor(
         val templateIds = parseTemplateIds(profile)
         if (templateIds.isEmpty()) return
 
+        // Guard: don't insert a second set of missions if this date already has some.
+        // Prevents duplicates from worker retries, app restarts on the same day, etc.
+        if (missionRepository.countDailyMissionsForDate(date) > 0) return
+
         // Fetch per-template completion counts from shadow records
         val shadowCompletions = userRepository.getShadowCompletions(templateIds)
 

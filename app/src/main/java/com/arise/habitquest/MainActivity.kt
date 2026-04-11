@@ -22,6 +22,7 @@ import com.arise.habitquest.worker.EveningReminderWorker
 import com.arise.habitquest.worker.MidDayCheckWorker
 import com.arise.habitquest.worker.MonthlyReportWorker
 import com.arise.habitquest.worker.MorningNotificationWorker
+import com.arise.habitquest.worker.PreResetReminderWorker
 import com.arise.habitquest.worker.WindDownWorker
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
@@ -76,10 +77,10 @@ class MainActivity : ComponentActivity() {
     private fun scheduleWorkers() {
         val wm = WorkManager.getInstance(this)
         lifecycleScope.launch {
-            // Read the user's configured hour; fall back to 8 AM before onboarding completes.
-            val hour = userRepository.getUserProfile()?.notificationHour ?: 8
-            DailyResetWorker.schedule(wm)
-            MorningNotificationWorker.schedule(wm, hour)
+            val notifHour = userRepository.getUserProfile()?.notificationHour ?: 8
+            DailyResetWorker.schedule(wm, timeProvider.resetHour, timeProvider.resetMinute)
+            MorningNotificationWorker.schedule(wm, notifHour)
+            PreResetReminderWorker.schedule(wm, timeProvider.resetHour, timeProvider.resetMinute)
             MidDayCheckWorker.schedule(wm)
             EveningReminderWorker.schedule(wm)
             WindDownWorker.schedule(wm)
