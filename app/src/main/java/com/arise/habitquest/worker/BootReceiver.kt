@@ -12,12 +12,12 @@ class BootReceiver : BroadcastReceiver() {
         ) {
             val tp = com.arise.habitquest.data.time.TimeProvider.getInstance(context)
             val workManager = WorkManager.getInstance(context)
-            DailyResetWorker.schedule(workManager, tp.resetHour, tp.resetMinute)
+            DailyResetWorker.schedule(workManager, tp)
             MorningNotificationWorker.schedule(workManager, hourOfDay = tp.resetHour.coerceAtLeast(6).let {
                 // Morning notification should always be after the reset; default to 8 if reset is early
                 if (it < 6) 8 else it
             })
-            PreResetReminderWorker.schedule(workManager, tp.resetHour, tp.resetMinute)
+            PreResetReminderWorker.schedule(workManager, tp)
             MidDayCheckWorker.schedule(workManager)
             EveningReminderWorker.schedule(workManager)
             WindDownWorker.schedule(workManager)

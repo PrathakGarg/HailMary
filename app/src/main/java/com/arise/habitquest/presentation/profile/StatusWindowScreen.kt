@@ -11,6 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -51,6 +52,7 @@ fun StatusWindowScreen(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
+                    .testTag("status_screen")
                     .padding(padding)
                     .padding(bottom = bottomBarPadding.calculateBottomPadding())
                     .verticalScroll(rememberScrollState())
@@ -84,7 +86,8 @@ fun StatusWindowScreen(
                         Spacer(Modifier.height(4.dp))
                         Text(
                             "RANK ${p.rank.displayName}  ·  LEVEL ${p.level}",
-                            style = AriseTypography.labelLarge.copy(color = rankColor(p.rank))
+                            style = AriseTypography.labelLarge.copy(color = rankColor(p.rank)),
+                            modifier = Modifier.testTag("status_rank_level")
                         )
                     }
                 }
@@ -129,10 +132,10 @@ fun StatusWindowScreen(
                     SectionLabel("HUNTER RECORD")
                     Spacer(Modifier.height(4.dp))
                     StatRowItem("Days Active", "${p.daysSinceJoin}")
-                    StatRowItem("Total Missions", "${p.totalMissionsCompleted}")
-                    StatRowItem("Total XP Earned", "${p.totalXpEarned}")
-                    StatRowItem("Current Streak", "${p.streakCurrent} days")
-                    StatRowItem("Best Streak", "${p.streakBest} days")
+                    StatRowItem("Total Missions", "${p.totalMissionsCompleted}", valueModifier = Modifier.testTag("status_total_missions"))
+                    StatRowItem("Total XP Earned", "${p.totalXpEarned}", valueModifier = Modifier.testTag("status_total_xp_earned"))
+                    StatRowItem("Current Streak", "${p.streakCurrent} days", valueModifier = Modifier.testTag("status_current_streak"))
+                    StatRowItem("Best Streak", "${p.streakBest} days", valueModifier = Modifier.testTag("status_best_streak"))
                     StatRowItem("Streak Shields", "${p.streakShields}")
                     StatRowItem("Member Since", p.joinDate?.toString() ?: "—")
                 }
@@ -164,20 +167,35 @@ fun StatusWindowScreen(
                 }
 
                 // ── Achievements button ───────────────────────────────────
-                Box(
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(20.dp)
+                        .padding(20.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     OutlinedButton(
                         onClick = onNavigateToAchievements,
                         border = BorderStroke(1.dp, BorderAccent),
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = PurpleLight),
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier
+                            .weight(1f)
+                            .testTag("status_view_achievements")
                     ) {
                         Icon(Icons.Filled.EmojiEvents, null, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(8.dp))
-                        Text("VIEW ACHIEVEMENTS", style = AriseTypography.labelMedium)
+                        Text("ACHIEVEMENTS", style = AriseTypography.labelMedium)
+                    }
+                    OutlinedButton(
+                        onClick = onNavigateToHistory,
+                        border = BorderStroke(1.dp, BorderAccent),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = PurpleLight),
+                        modifier = Modifier
+                            .weight(1f)
+                            .testTag("status_view_history")
+                    ) {
+                        Icon(Icons.Filled.QueryStats, null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text("BATTLE RECORD", style = AriseTypography.labelMedium)
                     }
                 }
             }
@@ -197,12 +215,17 @@ private fun SectionLabel(label: String) {
 }
 
 @Composable
-fun StatRowItem(label: String, value: String) {
+fun StatRowItem(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier,
+    valueModifier: Modifier = Modifier
+) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Text(label, style = AriseTypography.bodyMedium.copy(color = TextSecondary))
-        Text(value, style = AriseTypography.bodyMedium.copy(color = TextPrimary))
+        Text(value, modifier = valueModifier, style = AriseTypography.bodyMedium.copy(color = TextPrimary))
     }
 }

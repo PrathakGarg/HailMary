@@ -25,7 +25,8 @@ class ApplyDailyResetUseCase @Inject constructor(
         val profile = userRepository.getUserProfile() ?: return
         val sessionDate = timeProvider.sessionDay()
         val expiringDate = sessionDate.minusDays(1)
-        val isRestDay = sessionDate.dayOfWeek == DayOfWeek.of(((profile.restDay % 7) + 1).coerceIn(1, 7))
+        val currentSessionIsRestDay = sessionDate.dayOfWeek == DayOfWeek.of(((profile.restDay % 7) + 1).coerceIn(1, 7))
+        val expiringWasRestDay = expiringDate.dayOfWeek == DayOfWeek.of(((profile.restDay % 7) + 1).coerceIn(1, 7))
 
         // Any active daily gate from the expiring session date becomes failed at rollover.
         missionRepository.failActiveDailyMissionsForDate(expiringDate)
@@ -59,12 +60,17 @@ class ApplyDailyResetUseCase @Inject constructor(
             completionRate = completionRate,
             totalMissions = totalExpiring,
             systemMessage = systemMessage,
-            wasRestDay = isRestDay
+            wasRestDay = expiringWasRestDay
         )
         dailyLogDao.upsertLog(log)
 
+        // Break day streak only when a non-rest day had zero completed missions.
+        if (!expiringWasRestDay && completed.isEmpty()) {
+            userRepository.updateStreak(0, profile.streakBest)
+        }
+
         // HP regeneration
-        if (isRestDay) {
+        if (currentSessionIsRestDay) {
             val regenHp = (profile.maxHp * 0.30f).toInt()
             userRepository.updateHp((profile.hp + regenHp).coerceAtMost(profile.maxHp))
         } else if (completionRate >= 0.6f) {
@@ -91,7 +97,7 @@ class ApplyDailyResetUseCase @Inject constructor(
         userRepository.incrementDayCount()
 
         // Generate the active session day's missions (skip if rest day)
-        if (!isRestDay) {
+        if (!currentSessionIsRestDay) {
             generateDailyMissions(profile, sessionDate)
         }
 

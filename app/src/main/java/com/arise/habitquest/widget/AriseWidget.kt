@@ -27,7 +27,7 @@ class AriseWidget : GlanceAppWidget() {
         val db = AppDatabase.getInstance(context)
         val profile = db.userProfileDao().getUserProfile()
         val todayMissions = try {
-            val today = TimeProvider.getInstance(context).today().toString()
+            val today = TimeProvider.getInstance(context).sessionDay().toString()
             db.missionDao().getMissionsForDate(today)
         } catch (e: Exception) { emptyList() }
 

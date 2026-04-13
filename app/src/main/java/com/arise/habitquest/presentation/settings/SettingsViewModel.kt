@@ -78,8 +78,8 @@ class SettingsViewModel @Inject constructor(
             dataStore.setDayStartMinutes(minutes)
             timeProvider.setDayStartMinutes(minutes)
             val wm = WorkManager.getInstance(context)
-            DailyResetWorker.schedule(wm, timeProvider.resetHour, timeProvider.resetMinute)
-            PreResetReminderWorker.schedule(wm, timeProvider.resetHour, timeProvider.resetMinute)
+            DailyResetWorker.schedule(wm, timeProvider)
+            PreResetReminderWorker.schedule(wm, timeProvider)
         }
     }
 

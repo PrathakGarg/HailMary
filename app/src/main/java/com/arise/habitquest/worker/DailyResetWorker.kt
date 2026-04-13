@@ -8,8 +8,7 @@ import com.arise.habitquest.domain.repository.MissionRepository
 import com.arise.habitquest.domain.usecase.ApplyDailyResetUseCase
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
-import java.time.LocalDateTime
-import java.time.ZoneId
+import java.time.Duration
 import java.util.concurrent.TimeUnit
 
 @HiltWorker
@@ -34,7 +33,7 @@ class DailyResetWorker @AssistedInject constructor(
     }
 
     private suspend fun scheduleSleepReminderIfNeeded() {
-        val today = timeProvider.today()
+        val today = timeProvider.sessionDay()
         val missions = missionRepository.getMissionsForDate(today)
         val sleepMission = missions.firstOrNull { SleepReminderWorker.isSleepMission(it.title) }
             ?: return
@@ -50,11 +49,32 @@ class DailyResetWorker @AssistedInject constructor(
         private val RESET_HOUR = 4
         private val RESET_MINUTE = 30
 
+        fun schedule(workManager: WorkManager, timeProvider: TimeProvider) {
+            val now = timeProvider.trustedNow().toLocalDateTime()
+            val nextReset = timeProvider.nextDayStartDateTime()
+            val delay = Duration.between(now, nextReset).toMillis().coerceAtLeast(0L)
+
+            val request = PeriodicWorkRequestBuilder<DailyResetWorker>(1, TimeUnit.DAYS)
+                .setInitialDelay(delay, TimeUnit.MILLISECONDS)
+                .setConstraints(
+                    Constraints.Builder()
+                        .setRequiredNetworkType(NetworkType.NOT_REQUIRED)
+                        .build()
+                )
+                .build()
+
+            workManager.enqueueUniquePeriodicWork(
+                WORK_NAME,
+                ExistingPeriodicWorkPolicy.UPDATE,
+                request
+            )
+        }
+
         fun schedule(workManager: WorkManager, resetHour: Int = 4, resetMinute: Int = 30) {
-            val now = LocalDateTime.now()
+            val now = java.time.LocalDateTime.now()
             val todayReset = now.toLocalDate().atTime(resetHour, resetMinute)
             val nextReset = if (now.isBefore(todayReset)) todayReset else todayReset.plusDays(1)
-            val delay = nextReset.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli() -
+            val delay = nextReset.atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli() -
                     System.currentTimeMillis()
 
             val request = PeriodicWorkRequestBuilder<DailyResetWorker>(1, TimeUnit.DAYS)

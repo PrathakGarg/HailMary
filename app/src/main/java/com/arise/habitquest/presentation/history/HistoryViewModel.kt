@@ -40,7 +40,7 @@ data class HistoryUiState(
     val totalXpEarned: Long = 0L,
     val bestStreak: Int = 0,
     val currentStreak: Int = 0,
-    val today: LocalDate = LocalDate.now(),
+    val today: LocalDate = LocalDate.MIN,
     val isLoading: Boolean = true
 )
 
@@ -59,16 +59,16 @@ class HistoryViewModel @Inject constructor(
 
     private fun loadHistory() {
         viewModelScope.launch {
-            val today = timeProvider.today()
-            val start = today.minusDays(90)
+            val sessionDate = timeProvider.sessionDay()
+            val start = sessionDate.minusDays(90)
             val fmt = DateTimeFormatter.ISO_LOCAL_DATE
 
-            val logs = logDao.getLogsInRange(start.format(fmt), today.format(fmt))
+            val logs = logDao.getLogsInRange(start.format(fmt), sessionDate.format(fmt))
             val logMap = logs.associateBy { it.date }
 
             // Build 91-day calendar
             val days = (90 downTo 0).map { daysAgo ->
-                val d = today.minusDays(daysAgo.toLong())
+                val d = sessionDate.minusDays(daysAgo.toLong())
                 val log = logMap[d.format(fmt)]
                 DayEntry(
                     date = d,
@@ -79,7 +79,7 @@ class HistoryViewModel @Inject constructor(
 
             // Weekly XP (last 7 weeks)
             val weeklyXp = (6 downTo 0).map { weeksAgo ->
-                val weekStart = today.minusWeeks(weeksAgo.toLong()).with(java.time.DayOfWeek.MONDAY)
+                val weekStart = sessionDate.minusWeeks(weeksAgo.toLong()).with(java.time.DayOfWeek.MONDAY)
                 val weekEnd = weekStart.plusDays(6)
                 val weekLogs = logs.filter {
                     val d = LocalDate.parse(it.date, fmt)
@@ -94,7 +94,7 @@ class HistoryViewModel @Inject constructor(
             val insights = buildInsights(days, logs)
 
             // Category pain-point stats (last 30 days of missions)
-            val categoryStats = buildCategoryStats(today, fmt)
+            val categoryStats = buildCategoryStats(sessionDate, fmt)
 
             // User profile stats
             val profile = userRepository.getUserProfile()
@@ -108,7 +108,7 @@ class HistoryViewModel @Inject constructor(
                 totalXpEarned = profile?.totalXpEarned ?: 0L,
                 bestStreak = profile?.streakBest ?: 0,
                 currentStreak = profile?.streakCurrent ?: 0,
-                today = today,
+                today = sessionDate,
                 isLoading = false
             )
         }
@@ -117,13 +117,13 @@ class HistoryViewModel @Inject constructor(
     private fun buildInsights(days: List<DayEntry>, logs: List<DailyLogEntity>): List<AnalysisInsight> {
         val insights = mutableListOf<AnalysisInsight>()
         val fmt = DateTimeFormatter.ISO_LOCAL_DATE
-        val today = timeProvider.today()
+        val sessionDate = timeProvider.sessionDay()
 
         // 1. This week vs last week completion rate
-        val thisWeekDays = days.filter { !it.date.isBefore(today.minusDays(6)) && it.hasData }
+        val thisWeekDays = days.filter { !it.date.isBefore(sessionDate.minusDays(6)) && it.hasData }
         val lastWeekDays = days.filter {
             val d = it.date
-            !d.isBefore(today.minusDays(13)) && d.isBefore(today.minusDays(6)) && it.hasData
+            !d.isBefore(sessionDate.minusDays(13)) && d.isBefore(sessionDate.minusDays(6)) && it.hasData
         }
         val thisWeekAvg = if (thisWeekDays.isEmpty()) 0f else thisWeekDays.map { it.completionRate }.average().toFloat()
         val lastWeekAvg = if (lastWeekDays.isEmpty()) 0f else lastWeekDays.map { it.completionRate }.average().toFloat()
@@ -164,7 +164,7 @@ class HistoryViewModel @Inject constructor(
         }
 
         // 3. 30-day completion rate
-        val last30 = days.filter { it.hasData && !it.date.isBefore(today.minusDays(29)) }
+        val last30 = days.filter { it.hasData && !it.date.isBefore(sessionDate.minusDays(29)) }
         if (last30.isNotEmpty()) {
             val avg30 = last30.map { it.completionRate }.average().toFloat()
             val perfectDays = last30.count { it.completionRate >= 1.0f }
@@ -177,8 +177,8 @@ class HistoryViewModel @Inject constructor(
         }
 
         // 4. Current momentum (last 7 days trend)
-        val last7 = days.filter { it.hasData && !it.date.isBefore(today.minusDays(6)) }
-        val prev7 = days.filter { it.hasData && !it.date.isBefore(today.minusDays(13)) && it.date.isBefore(today.minusDays(6)) }
+        val last7 = days.filter { it.hasData && !it.date.isBefore(sessionDate.minusDays(6)) }
+        val prev7 = days.filter { it.hasData && !it.date.isBefore(sessionDate.minusDays(13)) && it.date.isBefore(sessionDate.minusDays(6)) }
         if (last7.isNotEmpty() && prev7.isNotEmpty()) {
             val last7Avg = last7.map { it.completionRate }.average().toFloat()
             val prev7Avg = prev7.map { it.completionRate }.average().toFloat()

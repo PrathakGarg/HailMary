@@ -27,7 +27,7 @@ data class HomeUiState(
     val showSystemNotification: Boolean = false,
     val notificationMessage: String = "",
     val pendingRankUp: String = "",
-    val currentDate: LocalDate = LocalDate.now(),
+    val currentDate: LocalDate = LocalDate.MIN,
     val minutesUntilReset: Long = Long.MAX_VALUE,
     val isLoading: Boolean = true
 ) {
@@ -67,14 +67,14 @@ class HomeViewModel @Inject constructor(
     // automatically when the day rolls over at the configured reset time.
     private fun observeSessionDay() {
         viewModelScope.launch {
-            var currentDate: LocalDate? = null
+            var currentSessionDate: LocalDate? = null
             var missionJob: kotlinx.coroutines.Job? = null
             while (true) {
                 val sessionDay = timeProvider.sessionDay()
                 val mins = timeProvider.minutesUntilReset()
                 _uiState.update { it.copy(minutesUntilReset = mins) }
-                if (sessionDay != currentDate) {
-                    currentDate = sessionDay
+                if (sessionDay != currentSessionDate) {
+                    currentSessionDate = sessionDay
                     _uiState.update { it.copy(currentDate = sessionDay) }
                     missionJob?.cancel()
                     missionJob = launch {

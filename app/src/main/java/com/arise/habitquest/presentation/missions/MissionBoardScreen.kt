@@ -17,6 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -76,6 +77,7 @@ fun MissionBoardScreen(
                 selectedTabIndex = pagerState.currentPage,
                 containerColor = BackgroundSurface,
                 contentColor = PurpleCore,
+                modifier = Modifier.testTag("missions_tab_row"),
                 edgePadding = 0.dp,
                 indicator = { tabPositions ->
                     if (pagerState.currentPage < tabPositions.size) {
@@ -90,6 +92,7 @@ fun MissionBoardScreen(
                     Tab(
                         selected = pagerState.currentPage == index,
                         onClick = { viewModel.selectTab(index) },
+                        modifier = Modifier.testTag("missions_tab_$index"),
                         text = {
                             Text(
                                 title,
@@ -105,7 +108,9 @@ fun MissionBoardScreen(
 
             HorizontalPager(
                 state = pagerState,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier
+                    .weight(1f)
+                    .testTag("missions_pager")
             ) { page ->
                 val missions = when (page) {
                     0 -> state.dailyMissions
@@ -135,7 +140,9 @@ private fun MissionListPage(
 ) {
     if (missions.isEmpty() && !isLoading) {
         Box(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .testTag("missions_empty_page_$selectedTab"),
             contentAlignment = Alignment.Center
         ) {
             Text(
@@ -151,7 +158,9 @@ private fun MissionListPage(
         }
     } else {
         LazyColumn(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .testTag("missions_list_page_$selectedTab"),
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {

@@ -37,9 +37,9 @@ class ProfileViewModel @Inject constructor(
 
     private suspend fun loadCategoryStats() {
         val fmt   = DateTimeFormatter.ISO_LOCAL_DATE
-        val today = timeProvider.today()
-        val from  = today.minusDays(30).format(fmt)
-        val to    = today.format(fmt)
+        val sessionDate = timeProvider.sessionDay()
+        val from  = sessionDate.minusDays(30).format(fmt)
+        val to    = sessionDate.format(fmt)
         val missions = missionDao.getMissionsInRange(from, to)
 
         _categoryStats.value = MissionCategory.entries.map { category ->

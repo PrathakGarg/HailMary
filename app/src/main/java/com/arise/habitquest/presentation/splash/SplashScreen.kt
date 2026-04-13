@@ -12,20 +12,13 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.arise.habitquest.data.local.datastore.OnboardingDataStore
 import com.arise.habitquest.ui.theme.*
-import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.first
-import javax.inject.Inject
 
 @Composable
 fun SplashScreen(
     onNavigateToOnboarding: () -> Unit,
-    onNavigateToHome: () -> Unit,
-    dataStore: OnboardingDataStore = androidx.hilt.navigation.compose.hiltViewModel<SplashViewModel>().let {
-        it.dataStore
-    }
+    onNavigateToHome: () -> Unit
 ) {
     val viewModel = androidx.hilt.navigation.compose.hiltViewModel<SplashViewModel>()
 

@@ -41,7 +41,7 @@ class MissionGenerator @Inject constructor(
             restDay = answers.restDay.ordinal,
             notificationHour = answers.notificationHour,
             onboardingComplete = true,
-            joinDate = timeProvider.today(),
+            joinDate = timeProvider.sessionDay(),
             adaptiveDifficulty = answers.startingDifficulty.factor
         )
     }
@@ -62,7 +62,7 @@ class MissionGenerator @Inject constructor(
     }
 
     fun generatePenaltyZoneMission(profile: UserProfile): Mission {
-        val todayStr = timeProvider.today()
+        val todayStr = timeProvider.sessionDay()
         return Mission(
             id = UUID.randomUUID().toString(),
             title = "PENALTY ZONE: Trial of Redemption",

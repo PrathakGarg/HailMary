@@ -8,6 +8,7 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
@@ -235,6 +236,7 @@ fun RowScope.NavItem(label: String, icon: ImageVector, selected: Boolean, onClic
     NavigationBarItem(
         selected = selected,
         onClick = onClick,
+        modifier = Modifier.testTag("bottom_nav_${label.lowercase()}"),
         icon = { Icon(icon, label, tint = if (selected) PurpleLight else TextSecondary) },
         label = {
             Text(

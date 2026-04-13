@@ -43,18 +43,18 @@ class MissionBoardViewModel @Inject constructor(
     // when the day rolls over at the configured reset time.
     private fun observeSessionDay() {
         viewModelScope.launch {
-            var currentDate: LocalDate? = null
+            var currentSessionDate: LocalDate? = null
             var boardJob: kotlinx.coroutines.Job? = null
             while (true) {
-                val today = timeProvider.sessionDay()
-                if (today != currentDate) {
-                    currentDate = today
-                    val weekStart = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+                val sessionDate = timeProvider.sessionDay()
+                if (sessionDate != currentSessionDate) {
+                    currentSessionDate = sessionDate
+                    val weekStart = sessionDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
                     val weekEnd = weekStart.plusDays(6)
                     boardJob?.cancel()
                     boardJob = launch {
                         combine(
-                            missionRepository.observeMissionsForDate(today),
+                            missionRepository.observeMissionsForDate(sessionDate),
                             missionRepository.observeWeeklyMissions(weekStart, weekEnd),
                             missionRepository.observeBossRaids(),
                             missionRepository.observePenaltyZone()

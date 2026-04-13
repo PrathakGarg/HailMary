@@ -78,9 +78,9 @@ class MainActivity : ComponentActivity() {
         val wm = WorkManager.getInstance(this)
         lifecycleScope.launch {
             val notifHour = userRepository.getUserProfile()?.notificationHour ?: 8
-            DailyResetWorker.schedule(wm, timeProvider.resetHour, timeProvider.resetMinute)
+            DailyResetWorker.schedule(wm, timeProvider)
             MorningNotificationWorker.schedule(wm, notifHour)
-            PreResetReminderWorker.schedule(wm, timeProvider.resetHour, timeProvider.resetMinute)
+            PreResetReminderWorker.schedule(wm, timeProvider)
             MidDayCheckWorker.schedule(wm)
             EveningReminderWorker.schedule(wm)
             WindDownWorker.schedule(wm)

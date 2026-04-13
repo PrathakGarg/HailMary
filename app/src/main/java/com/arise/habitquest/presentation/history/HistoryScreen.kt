@@ -14,6 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -62,6 +63,7 @@ fun HistoryScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .testTag("history_screen")
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp),
@@ -69,12 +71,14 @@ fun HistoryScreen(
         ) {
             // ── Summary stats row ────────────────────────────────────────────
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("history_summary_row"),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                SummaryStatCard("MISSIONS", "${state.totalMissionsCompleted}", Modifier.weight(1f))
-                SummaryStatCard("TOTAL XP", "${state.totalXpEarned}", Modifier.weight(1f))
-                SummaryStatCard("BEST STREAK", "${state.bestStreak}d", Modifier.weight(1f))
+                SummaryStatCard("MISSIONS", "${state.totalMissionsCompleted}", Modifier.weight(1f).testTag("history_summary_missions"))
+                SummaryStatCard("TOTAL XP", "${state.totalXpEarned}", Modifier.weight(1f).testTag("history_summary_xp"))
+                SummaryStatCard("BEST STREAK", "${state.bestStreak}d", Modifier.weight(1f).testTag("history_summary_streak"))
             }
 
             // ── Calendar heatmap ─────────────────────────────────────────────
@@ -87,14 +91,14 @@ fun HistoryScreen(
             // ── XP bar chart (weekly) ────────────────────────────────────────
             if (state.weeklyXp.any { it.second > 0 }) {
                 SectionHeader("WEEKLY XP EARNED")
-                WeeklyXpChart(weeks = state.weeklyXp)
+                WeeklyXpChart(weeks = state.weeklyXp, modifier = Modifier.testTag("history_weekly_xp_chart"))
             }
 
             // ── Analysis insights ─────────────────────────────────────────────
             if (state.insights.isNotEmpty()) {
                 SectionHeader("SYSTEM ANALYSIS")
-                state.insights.forEach { insight ->
-                    InsightCard(insight = insight)
+                state.insights.forEachIndexed { index, insight ->
+                    InsightCard(insight = insight, modifier = Modifier.testTag("history_insight_$index"))
                 }
             }
 
@@ -117,6 +121,7 @@ fun HistoryScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .testTag("history_empty_state")
                         .padding(40.dp),
                     contentAlignment = Alignment.Center
                 ) {
@@ -162,6 +167,8 @@ private fun CalendarHeatmap(days: List<DayEntry>, today: LocalDate) {
     val weeks = days.chunked(7)
 
     Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+        Box(modifier = Modifier.testTag("history_heatmap")) {
+            Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
         // Day-of-week header
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -219,6 +226,8 @@ private fun CalendarHeatmap(days: List<DayEntry>, today: LocalDate) {
                 }
             }
         }
+            }
+        }
     }
 }
 
@@ -246,10 +255,10 @@ private fun HeatmapLegend() {
 }
 
 @Composable
-private fun WeeklyXpChart(weeks: List<Pair<String, Long>>) {
+private fun WeeklyXpChart(weeks: List<Pair<String, Long>>, modifier: Modifier = Modifier) {
     val maxXp = weeks.maxOfOrNull { it.second }?.takeIf { it > 0 } ?: 1L
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .height(100.dp),
         horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -291,9 +300,9 @@ private fun WeeklyXpChart(weeks: List<Pair<String, Long>>) {
 }
 
 @Composable
-private fun InsightCard(insight: AnalysisInsight) {
+private fun InsightCard(insight: AnalysisInsight, modifier: Modifier = Modifier) {
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .background(BackgroundCard, RoundedCornerShape(10.dp))
             .padding(14.dp),

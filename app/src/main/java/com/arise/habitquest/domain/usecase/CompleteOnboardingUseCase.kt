@@ -21,7 +21,7 @@ class CompleteOnboardingUseCase @Inject constructor(
     private val timeProvider: TimeProvider
 ) {
     suspend operator fun invoke(answers: OnboardingAnswers) {
-        val today = timeProvider.today()
+        val sessionDate = timeProvider.sessionDay()
 
         // Generate profile from questionnaire
         val profile = generator.generateInitialProfile(answers)
@@ -42,11 +42,11 @@ class CompleteOnboardingUseCase @Inject constructor(
         userRepository.upsertProfile(fullProfile)
 
         // Generate first set of daily missions
-        val initialMissions = generator.generateInitialMissions(answers, today)
+        val initialMissions = generator.generateInitialMissions(answers, sessionDate)
         missionRepository.insertMissions(initialMissions)
 
         // Generate first weekly boss
-        val weekStart = today.with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY))
+        val weekStart = sessionDate.with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY))
         val boss = generator.generateWeeklyBoss(fullProfile, weekStart)
         missionRepository.insertMission(boss)
 
@@ -57,6 +57,7 @@ class CompleteOnboardingUseCase @Inject constructor(
         dataStore.setOnboardingComplete(true)
         dataStore.setHunterName(answers.hunterName)
         dataStore.setNotificationHour(answers.notificationHour)
-        dataStore.setLastDailyResetDate(today.toString())
+        dataStore.setDayStartMinutes(TimeProvider.DEFAULT_DAY_START_MINUTES)
+        dataStore.setLastDailyResetDate(sessionDate.toString())
     }
 }

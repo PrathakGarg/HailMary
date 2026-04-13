@@ -10,6 +10,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -52,6 +53,7 @@ fun SettingsScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .testTag("settings_screen")
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
                 .padding(20.dp),
@@ -72,7 +74,9 @@ fun SettingsScreen(
                     "${state.activeFocusThemes.size}/3 active  ·  At least 1 required",
                     style = AriseTypography.labelSmall.copy(color = TextDim),
                     textAlign = TextAlign.End,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("settings_focus_count")
                 )
             }
 
@@ -83,6 +87,7 @@ fun SettingsScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .testTag("settings_rest_day_${day.name.lowercase()}")
                             .clip(RoundedCornerShape(8.dp))
                             .background(if (selected) PurpleFaint else BackgroundCard)
                             .border(1.dp, if (selected) PurpleCore else BorderDefault, RoundedCornerShape(8.dp))
@@ -93,7 +98,14 @@ fun SettingsScreen(
                     ) {
                         Text(day.name, style = AriseTypography.bodyMedium.copy(color = if (selected) TextPrimary else TextSecondary))
                         if (selected) {
-                            Icon(Icons.Filled.CheckCircle, null, tint = PurpleCore, modifier = Modifier.size(18.dp))
+                            Icon(
+                                Icons.Filled.CheckCircle,
+                                null,
+                                tint = PurpleCore,
+                                modifier = Modifier
+                                    .size(18.dp)
+                                    .testTag("settings_rest_day_selected_${day.name.lowercase()}")
+                            )
                         }
                     }
                 }
@@ -105,7 +117,9 @@ fun SettingsScreen(
                 Spacer(Modifier.height(4.dp))
                 OutlinedButton(
                     onClick = { showRegenerateDialog = true },
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("settings_regenerate_button"),
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = PurpleCore),
                     border = ButtonDefaults.outlinedButtonBorder.copy(
                         brush = androidx.compose.ui.graphics.SolidColor(PurpleCore)
@@ -128,6 +142,7 @@ fun SettingsScreen(
                 Slider(
                     value = slot,
                     onValueChange = { viewModel.setDayStartMinutes((it.toInt() * 30)) },
+                    modifier = Modifier.testTag("settings_day_start_slider"),
                     valueRange = 0f..47f,
                     steps = 46,
                     colors = SliderDefaults.colors(
@@ -146,11 +161,13 @@ fun SettingsScreen(
             SettingsSection("MORNING NOTIFICATION") {
                 Text(
                     "Reminder at: ${state.notificationHour}:00",
-                    style = AriseTypography.bodyMedium.copy(color = TextPrimary)
+                    style = AriseTypography.bodyMedium.copy(color = TextPrimary),
+                    modifier = Modifier.testTag("settings_notification_label")
                 )
                 Slider(
                     value = state.notificationHour.toFloat(),
                     onValueChange = { viewModel.setNotificationHour(it.toInt()) },
+                    modifier = Modifier.testTag("settings_notification_slider"),
                     valueRange = 5f..22f,
                     steps = 16,
                     colors = SliderDefaults.colors(
@@ -165,7 +182,8 @@ fun SettingsScreen(
             SettingsSection("EMERGENCY STASIS") {
                 Text(
                     "Activates a 24-hour grace period. No penalties will apply. Uses remaining: ${profile?.graceUsesRemaining ?: 0}/3",
-                    style = AriseTypography.bodySmall.copy(color = TextSecondary)
+                    style = AriseTypography.bodySmall.copy(color = TextSecondary),
+                    modifier = Modifier.testTag("settings_stasis_uses")
                 )
                 Spacer(Modifier.height(4.dp))
                 val canUse = (profile?.graceUsesRemaining ?: 0) > 0
@@ -178,7 +196,9 @@ fun SettingsScreen(
                         disabledContainerColor = BackgroundElevated,
                         disabledContentColor = TextDim
                     ),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("settings_stasis_button")
                 ) {
                     Icon(Icons.Filled.Shield, null, modifier = Modifier.size(16.dp))
                     Spacer(Modifier.width(6.dp))
@@ -203,6 +223,7 @@ fun SettingsScreen(
         if (showRegenerateDialog) {
             AlertDialog(
                 onDismissRequest = { showRegenerateDialog = false },
+                modifier = Modifier.testTag("settings_regenerate_dialog"),
                 containerColor = BackgroundSurface,
                 title = {
                     Text(
@@ -217,7 +238,10 @@ fun SettingsScreen(
                     )
                 },
                 dismissButton = {
-                    TextButton(onClick = { showRegenerateDialog = false }) {
+                    TextButton(
+                        onClick = { showRegenerateDialog = false },
+                        modifier = Modifier.testTag("settings_regenerate_cancel")
+                    ) {
                         Text("CANCEL", style = AriseTypography.labelMedium.copy(color = TextDim))
                     }
                 },
@@ -226,7 +250,8 @@ fun SettingsScreen(
                         onClick = {
                             showRegenerateDialog = false
                             viewModel.regenerateMissions()
-                        }
+                        },
+                        modifier = Modifier.testTag("settings_regenerate_confirm")
                     ) {
                         Text("REGENERATE", style = AriseTypography.labelMedium.copy(color = PurpleCore))
                     }
@@ -274,6 +299,7 @@ private fun FocusThemeGrid(
                     Box(
                         modifier = Modifier
                             .weight(1f)
+                            .testTag("settings_theme_${theme.name.lowercase()}")
                             .clip(RoundedCornerShape(10.dp))
                             .background(if (isActive) PurpleFaint else BackgroundCard)
                             .border(

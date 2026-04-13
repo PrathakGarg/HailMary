@@ -16,8 +16,7 @@ import com.arise.habitquest.domain.repository.MissionRepository
 import com.arise.habitquest.domain.repository.UserRepository
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
-import java.time.LocalTime
-import java.time.temporal.ChronoUnit
+import java.time.Duration
 import java.util.concurrent.TimeUnit
 
 /**
@@ -85,10 +84,27 @@ class PreResetReminderWorker @AssistedInject constructor(
         /**
          * Schedules the reminder to fire 60 minutes before [resetHour]:[resetMinute].
          */
+        fun schedule(workManager: WorkManager, timeProvider: TimeProvider) {
+            val now = timeProvider.trustedNow().toLocalDateTime()
+            var target = timeProvider.nextDayStartDateTime().minusHours(1)
+            if (!target.isAfter(now)) target = target.plusDays(1)
+            val delayMinutes = Duration.between(now, target).toMinutes().coerceAtLeast(0L)
+
+            val request = PeriodicWorkRequestBuilder<PreResetReminderWorker>(1, TimeUnit.DAYS)
+                .setInitialDelay(delayMinutes, TimeUnit.MINUTES)
+                .build()
+
+            workManager.enqueueUniquePeriodicWork(
+                WORK_NAME,
+                ExistingPeriodicWorkPolicy.UPDATE,
+                request
+            )
+        }
+
         fun schedule(workManager: WorkManager, resetHour: Int, resetMinute: Int = 30) {
-            val targetTime = LocalTime.of(resetHour, resetMinute).minusMinutes(60)
-            val now = LocalTime.now()
-            var delayMinutes = now.until(targetTime, ChronoUnit.MINUTES)
+            val targetTime = java.time.LocalTime.of(resetHour, resetMinute).minusMinutes(60)
+            val now = java.time.LocalTime.now()
+            var delayMinutes = now.until(targetTime, java.time.temporal.ChronoUnit.MINUTES)
             if (delayMinutes <= 0) delayMinutes += 24 * 60
 
             val request = PeriodicWorkRequestBuilder<PreResetReminderWorker>(1, TimeUnit.DAYS)

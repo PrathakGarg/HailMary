@@ -11,6 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -68,6 +69,7 @@ fun MissionDetailScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .testTag("mission_detail_screen")
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
                 .padding(20.dp),
@@ -257,7 +259,9 @@ fun MissionActionBar(
                 onClick = onFail,
                 border = BorderStroke(1.dp, CrimsonCore.copy(alpha = 0.5f)),
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = CrimsonLight),
-                modifier = Modifier.weight(1f)
+                modifier = Modifier
+                    .weight(1f)
+                    .testTag("mission_detail_fail")
             ) {
                 Icon(Icons.Filled.Close, null, modifier = Modifier.size(16.dp))
                 Spacer(Modifier.width(4.dp))
@@ -266,7 +270,10 @@ fun MissionActionBar(
             Button(
                 onClick = onComplete,
                 colors = ButtonDefaults.buttonColors(containerColor = EmeraldCore),
-                modifier = Modifier.weight(2f).glowEffect(EmeraldCore.copy(alpha = 0.4f))
+                modifier = Modifier
+                    .weight(2f)
+                    .testTag("mission_detail_complete")
+                    .glowEffect(EmeraldCore.copy(alpha = 0.4f))
             ) {
                 Icon(Icons.Filled.CheckCircle, null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(6.dp))

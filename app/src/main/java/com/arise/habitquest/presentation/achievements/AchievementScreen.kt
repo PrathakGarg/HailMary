@@ -16,6 +16,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -55,7 +56,8 @@ fun AchievementScreen(
                     Text("ACHIEVEMENTS", style = AriseTypography.headlineSmall.copy(letterSpacing = 3.sp))
                     Text(
                         "${state.unlockedCount}/${state.totalCount}",
-                        style = AriseTypography.labelMedium.copy(color = GoldCore)
+                        style = AriseTypography.labelMedium.copy(color = GoldCore),
+                        modifier = Modifier.testTag("achievement_summary")
                     )
                 }
             }
@@ -64,6 +66,7 @@ fun AchievementScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .testTag("achievement_screen")
                 .padding(padding)
                 .padding(bottom = bottomBarPadding.calculateBottomPadding())
         ) {
@@ -88,7 +91,8 @@ fun AchievementScreen(
                     items(state.filteredAchievements) { achievement ->
                         AchievementCard(
                             achievement = achievement,
-                            onClick = { selectedAchievement = achievement }
+                            onClick = { selectedAchievement = achievement },
+                            modifier = Modifier.testTag("achievement_card_${achievement.id}")
                         )
                     }
                 }
@@ -111,6 +115,7 @@ private fun AchievementDetailDialog(achievement: Achievement, onDismiss: () -> U
 
     AlertDialog(
         onDismissRequest = onDismiss,
+        modifier = Modifier.testTag("achievement_detail_dialog"),
         containerColor = BackgroundSurface,
         title = {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -224,6 +229,7 @@ fun ScrollableFilterRow(
             val isSelected = filter == selected
             Box(
                 modifier = Modifier
+                    .testTag("achievement_filter_${filter.name.lowercase()}")
                     .clip(RoundedCornerShape(20.dp))
                     .background(if (isSelected) PurpleCore else BackgroundCard)
                     .border(1.dp, if (isSelected) PurpleCore else BorderDefault, RoundedCornerShape(20.dp))
@@ -243,12 +249,16 @@ fun ScrollableFilterRow(
 }
 
 @Composable
-fun AchievementCard(achievement: Achievement, onClick: () -> Unit = {}) {
+fun AchievementCard(
+    achievement: Achievement,
+    onClick: () -> Unit = {},
+    modifier: Modifier = Modifier
+) {
     val rarityColor = rarityColor(achievement.rarity)
     val isUnlocked = achievement.isUnlocked
 
     Box(
-        modifier = Modifier
+        modifier = modifier
             .clip(RoundedCornerShape(14.dp))
             .background(BackgroundCard)
             .clickable(onClick = onClick)

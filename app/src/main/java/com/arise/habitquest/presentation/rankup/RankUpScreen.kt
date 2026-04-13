@@ -2,7 +2,9 @@ package com.arise.habitquest.presentation.rankup
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
@@ -13,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -130,6 +133,7 @@ fun RankUpScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .testTag("rankup_screen")
             .background(
                 Brush.radialGradient(
                     colors = listOf(rankCol.copy(alpha = 0.15f), BackgroundDeep, BackgroundDeep),
@@ -149,11 +153,12 @@ fun RankUpScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .verticalScroll(rememberScrollState())
                 .padding(horizontal = 28.dp, vertical = 48.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
-            Spacer(Modifier.weight(1f))
+            Spacer(Modifier.height(16.dp))
 
             AnimatedVisibility(visible = showBadge, enter = fadeIn(tween(800)) + scaleIn(tween(600, easing = EaseOutBack))) {
                 RankBadge(rank = newRank, size = 96.dp)
@@ -213,7 +218,7 @@ fun RankUpScreen(
                 )
             }
 
-            Spacer(Modifier.weight(1f))
+            Spacer(Modifier.height(16.dp))
 
             AnimatedVisibility(visible = showButton, enter = fadeIn(tween(400)) + slideInVertically { 60 }) {
                 Button(
@@ -221,6 +226,7 @@ fun RankUpScreen(
                     colors = ButtonDefaults.buttonColors(containerColor = rankCol),
                     modifier = Modifier
                         .fillMaxWidth()
+                        .testTag("rankup_continue")
                         .glowEffect(rankCol)
                 ) {
                     Text(

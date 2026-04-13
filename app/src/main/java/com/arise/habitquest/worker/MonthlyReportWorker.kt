@@ -36,23 +36,23 @@ class MonthlyReportWorker @AssistedInject constructor(
         return try {
             timeProvider.sync()
             val profile = userRepository.observeUserProfile().first() ?: return Result.success()
-            val today = timeProvider.today()
+            val sessionDate = timeProvider.sessionDay()
 
             // Check if we already ran this month
             val lastReport = dataStore.lastMonthlyReport.first()
-            val thisMonthKey = today.format(DateTimeFormatter.ofPattern("yyyy-MM"))
+            val thisMonthKey = sessionDate.format(DateTimeFormatter.ofPattern("yyyy-MM"))
             if (lastReport == thisMonthKey) return Result.success()
 
             // Gather last 30 days of missions
-            val from = today.minusDays(30).toString()
-            val to = today.toString()
+            val from = sessionDate.minusDays(30).toString()
+            val to = sessionDate.toString()
             val recentMissions = missionRepository.getMissionsInRange(from, to)
             val completed = recentMissions.count { it.isCompleted }
             val total = recentMissions.size
             val rate = if (total > 0) (completed * 100 / total) else 0
 
             // Build report message
-            val title = "Monthly System Report — ${today.format(DateTimeFormatter.ofPattern("MMMM yyyy"))}"
+            val title = "Monthly System Report — ${sessionDate.format(DateTimeFormatter.ofPattern("MMMM yyyy"))}"
             val reportBody = buildReportBody(
                 hunterName = profile.hunterName,
                 rank = profile.rank.displayName,

@@ -3,6 +3,7 @@ package com.arise.habitquest.domain.usecase
 import com.arise.habitquest.domain.model.Achievement
 import com.arise.habitquest.domain.model.Mission
 import com.arise.habitquest.domain.model.UserProfile
+import com.arise.habitquest.data.time.TimeProvider
 import com.arise.habitquest.domain.repository.MissionRepository
 import com.arise.habitquest.domain.repository.UserRepository
 import javax.inject.Inject
@@ -19,6 +20,7 @@ data class CompletionResult(
 class CompleteMissionUseCase @Inject constructor(
     private val missionRepository: MissionRepository,
     private val userRepository: UserRepository,
+    private val timeProvider: TimeProvider,
     private val checkLevelUp: CheckLevelUpUseCase,
     private val unlockAchievement: UnlockAchievementUseCase
 ) {
@@ -47,9 +49,16 @@ class CompleteMissionUseCase @Inject constructor(
         val newStats = profile.stats.add(mission.statRewards)
         userRepository.updateStats(newStats)
 
-        // Update streak
-        val newStreakBest = maxOf(profile.streakBest, newStreak)
-        userRepository.updateStreak(profile.streakCurrent + 1, newStreakBest)
+        // Update streak once per day: only the first completed mission for the
+        // active session day should advance the day-streak counter.
+        val completedToday = missionRepository.countCompletedForDate(timeProvider.sessionDay())
+        val streakCurrentAfterCompletion = if (completedToday == 1) {
+            profile.streakCurrent + 1
+        } else {
+            profile.streakCurrent
+        }
+        val newStreakBest = maxOf(profile.streakBest, streakCurrentAfterCompletion)
+        userRepository.updateStreak(streakCurrentAfterCompletion, newStreakBest)
 
         // Increment counters
         userRepository.incrementMissionStats(effectiveXp.toLong())
@@ -61,7 +70,7 @@ class CompleteMissionUseCase @Inject constructor(
         // toward the level-up check below.
         val updatedProfile = profile.copy(xp = newXp, stats = newStats)
         val finalProfile = updatedProfile.copy(
-            streakCurrent = profile.streakCurrent + 1,
+            streakCurrent = streakCurrentAfterCompletion,
             streakBest = newStreakBest,
             totalMissionsCompleted = profile.totalMissionsCompleted + 1
         )

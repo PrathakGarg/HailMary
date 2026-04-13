@@ -51,10 +51,6 @@ class FailMissionUseCase @Inject constructor(
             }
 
             userRepository.updateMissState(newMissDays, false)
-            // Mandate failures don't break the hunter's primary habit streak
-            if (!mission.isSystemMandate) {
-                userRepository.updateStreak(0, profile.streakBest)
-            }
         }
 
         val penaltyZoneTriggered = !isGraceDay && (profile.hp - hpDeducted) <= 0

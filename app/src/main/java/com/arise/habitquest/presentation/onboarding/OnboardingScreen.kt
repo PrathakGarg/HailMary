@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -61,7 +62,11 @@ fun OnboardingScreen(
                     .verticalScroll(rememberScrollState()),
                 label = "phase_content"
             ) { phase ->
-                Box(modifier = Modifier.fillMaxSize()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .testTag("onboarding_phase_$phase")
+                ) {
                     when (phase) {
                         0 -> Phase0Awakening(state, viewModel)
                         1 -> Phase1Goals(state, viewModel)
@@ -163,6 +168,7 @@ fun OnboardingNavBar(
         if (phase > 0) {
             OutlinedButton(
                 onClick = onBack,
+                modifier = Modifier.testTag("onboarding_back"),
                 border = BorderStroke(1.dp, BorderDefault),
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = TextSecondary)
             ) {
@@ -177,11 +183,13 @@ fun OnboardingNavBar(
         Button(
             onClick = onNext,
             enabled = canProceed && !isLoading,
+            modifier = Modifier
+                .testTag("onboarding_next")
+                .glowEffect(if (canProceed) PurpleGlow else Color.Transparent),
             colors = ButtonDefaults.buttonColors(
                 containerColor = PurpleCore,
                 disabledContainerColor = PurpleDim
-            ),
-            modifier = Modifier.glowEffect(if (canProceed) PurpleGlow else Color.Transparent)
+            )
         ) {
             if (isLoading) {
                 CircularProgressIndicator(

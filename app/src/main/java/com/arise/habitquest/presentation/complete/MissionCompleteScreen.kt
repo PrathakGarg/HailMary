@@ -12,6 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -85,6 +86,7 @@ fun MissionCompleteScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .testTag("mission_complete_screen")
             .background(
                 Brush.radialGradient(
                     colors = listOf(EmeraldCore.copy(alpha = 0.08f), BackgroundDeep),
@@ -175,7 +177,10 @@ fun MissionCompleteScreen(
                     Button(
                         onClick = onReturn,
                         colors = ButtonDefaults.buttonColors(containerColor = PurpleCore),
-                        modifier = Modifier.fillMaxWidth().glowEffect(PurpleGlow)
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("mission_complete_return")
+                            .glowEffect(PurpleGlow)
                     ) {
                         Text("RETURN TO BASE", style = AriseTypography.labelLarge.copy(color = TextPrimary))
                     }

@@ -6,6 +6,8 @@ plugins {
     alias(libs.plugins.ksp)
 }
 
+import java.io.ByteArrayOutputStream
+
 android {
     namespace = "com.arise.habitquest"
     compileSdk = 34
@@ -76,6 +78,7 @@ dependencies {
     implementation(libs.androidx.compose.animation)
     implementation(libs.androidx.compose.foundation)
     debugImplementation(libs.androidx.compose.ui.tooling)
+    debugImplementation("androidx.compose.ui:ui-test-manifest")
 
     // Activity
     implementation(libs.androidx.activity.compose)
@@ -125,5 +128,113 @@ dependencies {
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
     androidTestImplementation("androidx.test:runner:1.5.2")
     androidTestImplementation("androidx.test:rules:1.5.0")
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+    androidTestImplementation("androidx.test.uiautomator:uiautomator:2.3.0")
     androidTestImplementation("androidx.work:work-testing:2.9.0")
+}
+
+fun resolveAdbExecutable(): String {
+    val sdkFromEnv = System.getenv("ANDROID_SDK_ROOT") ?: System.getenv("ANDROID_HOME")
+    if (!sdkFromEnv.isNullOrBlank()) {
+        val adbPath = file("$sdkFromEnv/platform-tools/adb")
+        if (adbPath.exists()) return adbPath.absolutePath
+    }
+    return "adb"
+}
+
+val keepDebugData = providers.gradleProperty("keepDebugData")
+    .map { it.equals("true", ignoreCase = true) }
+    .orElse(false)
+
+val prepareConnectedTestDevice = tasks.register("prepareConnectedTestDevice") {
+    group = "verification"
+    description = "Clears app/test app data on connected device before instrumentation tests."
+
+    doLast {
+        if (keepDebugData.get()) {
+            println("[prepareConnectedTestDevice] keepDebugData=true -> skipping app data clear.")
+            return@doLast
+        }
+
+        val adb = resolveAdbExecutable()
+        val appId = "com.arise.habitquest"
+        val testAppId = "$appId.test"
+
+        fun runAdb(vararg args: String): String {
+            val stdout = ByteArrayOutputStream()
+            exec {
+                commandLine(adb, *args)
+                standardOutput = stdout
+                isIgnoreExitValue = false
+            }
+            return stdout.toString().trim()
+        }
+
+        fun runAdbAllowFailure(vararg args: String): Pair<Int, String> {
+            val stdout = ByteArrayOutputStream()
+            val result = exec {
+                commandLine(adb, *args)
+                standardOutput = stdout
+                isIgnoreExitValue = true
+            }
+            return result.exitValue to stdout.toString().trim()
+        }
+
+        fun connectedDevices(): List<String> {
+            val (exitCode, output) = runAdbAllowFailure("devices")
+            if (exitCode != 0) return emptyList()
+            return output
+                .lineSequence()
+                .drop(1) // Header: "List of devices attached"
+                .map { it.trim() }
+                .filter { it.isNotBlank() }
+                .mapNotNull { line ->
+                    val parts = line.split(Regex("\\s+"))
+                    val serial = parts.getOrNull(0) ?: return@mapNotNull null
+                    val state = parts.getOrNull(1) ?: return@mapNotNull null
+                    if (state == "device") serial else null
+                }
+                .toList()
+        }
+
+        fun isInstalled(packageName: String): Boolean {
+            val (_, output) = runAdbAllowFailure("shell", "pm", "list", "packages", packageName)
+            return output.lines().any { it.trim() == "package:$packageName" }
+        }
+
+        val devices = connectedDevices()
+        if (devices.isEmpty()) {
+            throw org.gradle.api.GradleException(
+                """
+                No connected Android device/emulator detected.
+                Start an emulator or connect a device, then rerun tests.
+
+                Example emulator command:
+                  ~/Android/Sdk/emulator/emulator -avd HailMary_API_34
+                """.trimIndent()
+            )
+        }
+
+        println("[prepareConnectedTestDevice] Connected devices: ${devices.joinToString()}")
+        runAdb("wait-for-device")
+        if (isInstalled(appId)) {
+            println("[prepareConnectedTestDevice] Clearing data for $appId")
+            runAdb("shell", "pm", "clear", appId)
+        } else {
+            println("[prepareConnectedTestDevice] $appId not installed yet; skipping clear.")
+        }
+
+        if (isInstalled(testAppId)) {
+            println("[prepareConnectedTestDevice] Clearing data for $testAppId")
+            runAdb("shell", "pm", "clear", testAppId)
+        } else {
+            println("[prepareConnectedTestDevice] $testAppId not installed yet; skipping clear.")
+        }
+
+        println("[prepareConnectedTestDevice] Device data reset complete.")
+    }
+}
+
+tasks.matching { it.name == "connectedDebugAndroidTest" }.configureEach {
+    dependsOn(prepareConnectedTestDevice)
 }

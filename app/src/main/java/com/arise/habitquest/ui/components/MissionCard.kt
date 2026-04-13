@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -54,6 +55,7 @@ fun MissionCard(
     Card(
         modifier = modifier
             .fillMaxWidth()
+            .testTag("mission_card_${mission.id}")
             .clickable(onClick = onClick)
             .then(
                 if (!isCompleted && !isFailed)
@@ -71,6 +73,13 @@ fun MissionCard(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
+                .then(
+                    when {
+                        isCompleted -> Modifier.testTag("mission_status_completed_${mission.id}")
+                        isFailed -> Modifier.testTag("mission_status_failed_${mission.id}")
+                        else -> Modifier
+                    }
+                )
                 .border(
                     width = if (isMandate && !isCompleted && !isFailed) 1.5.dp else 1.dp,
                     brush = Brush.horizontalGradient(
@@ -264,6 +273,7 @@ fun MissionCard(
                                 onClick = onComplete,
                                 modifier = Modifier
                                     .size(36.dp)
+                                    .testTag("mission_quick_complete_${mission.id}")
                                     .clip(CircleShape)
                                     .background(if (isMandate) MandateBorderColor.copy(alpha = 0.15f) else PurpleFaint)
                                     .border(1.dp, if (isMandate) MandateBorderColor.copy(alpha = 0.5f) else PurpleCore.copy(alpha = 0.4f), CircleShape)
