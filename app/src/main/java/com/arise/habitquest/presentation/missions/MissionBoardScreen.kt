@@ -124,7 +124,8 @@ fun MissionBoardScreen(
                     missions = missions,
                     selectedTab = page,
                     isLoading = state.isLoading,
-                    onMissionClick = onMissionClick
+                    onMissionClick = onMissionClick,
+                    onResetMission = viewModel::resetMissionOutcome
                 )
             }
         }
@@ -136,7 +137,8 @@ private fun MissionListPage(
     missions: List<Mission>,
     selectedTab: Int,
     isLoading: Boolean,
-    onMissionClick: (String) -> Unit
+    onMissionClick: (String) -> Unit,
+    onResetMission: (String) -> Unit
 ) {
     if (missions.isEmpty() && !isLoading) {
         Box(
@@ -178,7 +180,11 @@ private fun MissionListPage(
             if (done.isNotEmpty()) {
                 item { SectionLabel("COMPLETED / FAILED") }
                 items(done) { mission ->
-                    MissionCard(mission = mission, onClick = { onMissionClick(mission.id) })
+                    MissionCard(
+                        mission = mission,
+                        onClick = { onMissionClick(mission.id) },
+                        onReset = { onResetMission(mission.id) }
+                    )
                 }
             }
         }

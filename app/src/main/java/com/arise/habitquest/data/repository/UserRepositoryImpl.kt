@@ -39,6 +39,9 @@ class UserRepositoryImpl @Inject constructor(
     override suspend fun incrementMissionStats(xpGained: Long) =
         dao.incrementMissionStats(xpGained)
 
+    override suspend fun decrementMissionStats(completedDelta: Int, xpDelta: Long) =
+        dao.decrementMissionStats(completedDelta, xpDelta)
+
     override suspend fun updateShields(shields: Int) = dao.updateShields(shields)
 
     override suspend fun updateAdaptiveDifficulty(difficulty: Float) =

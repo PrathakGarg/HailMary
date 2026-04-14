@@ -149,7 +149,7 @@ class WorkerNightlyTest {
         val dataStore = OnboardingDataStore(context)
 
         // Build the production dependency chain (identical to E2ETestHarness.applyDailyReset)
-        val missionRepo = MissionRepositoryImpl(db.missionDao(), MissionMapper(), timeProvider)
+        val missionRepo = MissionRepositoryImpl(db.missionDao(), MissionMapper(), timeProvider, context)
         val userRepo = UserRepositoryImpl(db.userProfileDao(), db.shadowDao(), UserProfileMapper())
         val generator = MissionGenerator(timeProvider)
         val generateDailyMissions = GenerateDailyMissionsUseCase(missionRepo, userRepo, generator, dataStore)

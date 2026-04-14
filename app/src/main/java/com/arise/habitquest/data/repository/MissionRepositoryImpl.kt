@@ -1,10 +1,13 @@
 package com.arise.habitquest.data.repository
 
+import android.content.Context
 import com.arise.habitquest.data.local.database.dao.MissionDao
 import com.arise.habitquest.data.mapper.MissionMapper
 import com.arise.habitquest.data.time.TimeProvider
 import com.arise.habitquest.domain.model.Mission
 import com.arise.habitquest.domain.repository.MissionRepository
+import com.arise.habitquest.widget.refreshAriseWidget
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import java.time.LocalDate
@@ -13,8 +16,13 @@ import javax.inject.Inject
 class MissionRepositoryImpl @Inject constructor(
     private val dao: MissionDao,
     private val mapper: MissionMapper,
-    private val timeProvider: TimeProvider
+    private val timeProvider: TimeProvider,
+    @ApplicationContext private val appContext: Context
 ) : MissionRepository {
+
+    private suspend fun refreshWidget() {
+        runCatching { refreshAriseWidget(appContext) }
+    }
 
     override fun observeMissionsForDate(date: LocalDate): Flow<List<Mission>> =
         dao.observeMissionsForDate(date.toString()).map { list -> list.map(mapper::toDomain) }
@@ -35,24 +43,50 @@ class MissionRepositoryImpl @Inject constructor(
     override suspend fun getMissionById(id: String): Mission? =
         dao.getMissionById(id)?.let(mapper::toDomain)
 
-    override suspend fun insertMissions(missions: List<Mission>) =
+    override suspend fun deleteMissionById(id: String) {
+        dao.deleteMissionById(id)
+        refreshWidget()
+    }
+
+    override suspend fun insertMissions(missions: List<Mission>) {
         dao.insertMissions(missions.map(mapper::toEntity))
+        refreshWidget()
+    }
 
-    override suspend fun insertMission(mission: Mission) =
+    override suspend fun insertMission(mission: Mission) {
         dao.insertMission(mapper.toEntity(mission))
+        refreshWidget()
+    }
 
-    override suspend fun deleteDailyMissionsForDate(date: LocalDate) =
+    override suspend fun deleteDailyMissionsForDate(date: LocalDate) {
         dao.deleteDailyMissionsForDate(date.toString())
+        refreshWidget()
+    }
 
-    override suspend fun failActiveDailyMissionsForDate(date: LocalDate) =
+    override suspend fun failActiveDailyMissionsForDate(date: LocalDate) {
         dao.failActiveDailyMissionsForDate(date.toString())
+        refreshWidget()
+    }
 
-    override suspend fun markCompleted(id: String, streak: Int, usedMini: Boolean) =
+    override suspend fun markCompleted(id: String, streak: Int, usedMini: Boolean) {
         dao.markCompleted(id, timeProvider.nowMillis(), streak, usedMini)
+        refreshWidget()
+    }
 
-    override suspend fun markFailed(id: String) = dao.markFailed(id)
+    override suspend fun markFailed(id: String) {
+        dao.markFailed(id)
+        refreshWidget()
+    }
 
-    override suspend fun markSkipped(id: String) = dao.markSkipped(id)
+    override suspend fun markSkipped(id: String) {
+        dao.markSkipped(id)
+        refreshWidget()
+    }
+
+    override suspend fun resetOutcome(id: String) {
+        dao.resetOutcome(id)
+        refreshWidget()
+    }
 
     override suspend fun pruneOldDailyMissions(cutoffDate: LocalDate) =
         dao.pruneOldDailyMissions(cutoffDate.toString())

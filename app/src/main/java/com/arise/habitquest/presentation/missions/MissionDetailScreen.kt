@@ -7,6 +7,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -28,6 +29,7 @@ fun MissionDetailScreen(
     viewModel: MissionDetailViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(state.actionCompleted) {
         if (state.actionCompleted && state.completionResult != null) {
@@ -37,11 +39,24 @@ fun MissionDetailScreen(
         }
     }
 
+    LaunchedEffect(state.deprioritizeReplaced) {
+        if (state.deprioritizeReplaced) {
+            onBack()
+        }
+    }
+
+    LaunchedEffect(state.deprioritizeError) {
+        if (state.deprioritizeError) {
+            snackbarHostState.showSnackbar("Could not replace this mission right now.")
+        }
+    }
+
     val mission = state.mission ?: return
     val catColor = categoryColor(mission.category)
 
     Scaffold(
         containerColor = BackgroundDeep,
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         topBar = {
             Box(
                 modifier = Modifier
@@ -59,6 +74,7 @@ fun MissionDetailScreen(
                 MissionActionBar(
                     onComplete = viewModel::complete,
                     onFail = viewModel::fail,
+                    onDeprioritize = viewModel::deprioritizeAndReplace,
                     useMini = state.useMiniVersion,
                     onToggleMini = viewModel::toggleMiniVersion,
                     hasMini = mission.miniMissionDescription.isNotBlank()
@@ -225,6 +241,7 @@ fun ConsequenceCard(penaltyXp: Int, penaltyHp: Int) {
 fun MissionActionBar(
     onComplete: () -> Unit,
     onFail: () -> Unit,
+    onDeprioritize: () -> Unit,
     useMini: Boolean,
     onToggleMini: () -> Unit,
     hasMini: Boolean
@@ -250,6 +267,19 @@ fun MissionActionBar(
                     colors = SwitchDefaults.colors(checkedThumbColor = GoldCore, checkedTrackColor = GoldDim)
                 )
             }
+        }
+        TextButton(
+            onClick = onDeprioritize,
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("mission_detail_deprioritize")
+        ) {
+            Icon(Icons.Filled.Tune, null, modifier = Modifier.size(16.dp), tint = TextSecondary)
+            Spacer(Modifier.width(6.dp))
+            Text(
+                "DEPRIORITIZE THIS MISSION TYPE",
+                style = AriseTypography.labelMedium.copy(color = TextSecondary)
+            )
         }
         Row(
             horizontalArrangement = Arrangement.spacedBy(12.dp),

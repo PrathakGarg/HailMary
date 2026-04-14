@@ -16,6 +16,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.arise.habitquest.data.generator.MissionTemplates
 import com.arise.habitquest.domain.model.FocusTheme
 import com.arise.habitquest.ui.components.glowEffect
 import com.arise.habitquest.ui.theme.*
@@ -31,6 +32,7 @@ fun SettingsScreen(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val profile = state.profile
     var showRegenerateDialog by remember { mutableStateOf(false) }
+    var showBlocklistDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         containerColor = BackgroundDeep,
@@ -81,40 +83,46 @@ fun SettingsScreen(
             }
 
             SettingsSection("MISSION FILTERS") {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(BackgroundCard)
-                        .border(1.dp, BorderDefault, RoundedCornerShape(8.dp))
-                        .padding(horizontal = 12.dp, vertical = 10.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(
-                        modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(2.dp)
+                if (state.deprioritizedTemplateIds.isNotEmpty()) {
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "Deprioritized mission types: ${state.deprioritizedTemplateIds.size}",
+                        style = AriseTypography.bodySmall.copy(color = TextSecondary)
+                    )
+                    Text(
+                        "These are added from the mission detail screen when you tap 'Deprioritize this mission type'.",
+                        style = AriseTypography.bodySmall.copy(color = TextDim)
+                    )
+                    TextButton(
+                        onClick = viewModel::clearDeprioritizedTemplates,
+                        modifier = Modifier.testTag("settings_clear_deprioritized")
                     ) {
+                        Icon(Icons.Filled.Restore, null, modifier = Modifier.size(16.dp), tint = TextSecondary)
+                        Spacer(Modifier.width(6.dp))
                         Text(
-                            "Exclude Inbox / Debris Missions",
-                            style = AriseTypography.bodyMedium.copy(color = TextPrimary)
-                        )
-                        Text(
-                            "Hides tasks like Inbox Zero and 2-minute sweep from daily rotation.",
-                            style = AriseTypography.bodySmall.copy(color = TextSecondary)
+                            "CLEAR DEPRIORITIZED LIST",
+                            style = AriseTypography.labelMedium.copy(color = TextSecondary)
                         )
                     }
-                    Switch(
-                        checked = state.excludeInboxMissions,
-                        onCheckedChange = viewModel::setExcludeInboxMissions,
-                        modifier = Modifier.testTag("settings_exclude_inbox_switch"),
-                        colors = SwitchDefaults.colors(
-                            checkedThumbColor = PurpleCore,
-                            checkedTrackColor = PurpleFaint,
-                            uncheckedThumbColor = TextDim,
-                            uncheckedTrackColor = BackgroundSurface
-                        )
+                } else {
+                    Text(
+                        "Use Mission Detail -> Deprioritize this mission type to shape your mission pool.",
+                        style = AriseTypography.bodySmall.copy(color = TextSecondary)
                     )
+                }
+
+                OutlinedButton(
+                    onClick = { showBlocklistDialog = true },
+                    enabled = state.deprioritizedTemplateIds.isNotEmpty(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("settings_manage_blocklist"),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = TextSecondary),
+                    border = BorderStroke(1.dp, BorderDefault)
+                ) {
+                    Icon(Icons.Filled.Block, null, modifier = Modifier.size(16.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text("MANAGE BLOCKLIST", style = AriseTypography.labelMedium)
                 }
             }
 
@@ -296,7 +304,60 @@ fun SettingsScreen(
                 }
             )
         }
+
+        if (showBlocklistDialog) {
+            AlertDialog(
+                onDismissRequest = { showBlocklistDialog = false },
+                modifier = Modifier.testTag("settings_blocklist_dialog"),
+                containerColor = BackgroundSurface,
+                title = {
+                    Text(
+                        "Blocked Mission Types",
+                        style = AriseTypography.titleMedium.copy(color = TextPrimary)
+                    )
+                },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        state.deprioritizedTemplateIds
+                            .sorted()
+                            .forEach { templateId ->
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        templateDisplayName(templateId),
+                                        style = AriseTypography.bodyMedium.copy(color = TextSecondary),
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    IconButton(
+                                        onClick = { viewModel.removeDeprioritizedTemplate(templateId) },
+                                        modifier = Modifier.testTag("settings_unblock_${templateId.lowercase()}")
+                                    ) {
+                                        Icon(Icons.Filled.RemoveCircleOutline, contentDescription = "Unblock", tint = TextSecondary)
+                                    }
+                                }
+                            }
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = { showBlocklistDialog = false }) {
+                        Text("DONE", style = AriseTypography.labelMedium.copy(color = PurpleCore))
+                    }
+                }
+            )
+        }
     }
+}
+
+private fun templateDisplayName(templateId: String): String {
+    val title = MissionTemplates.all
+        .firstOrNull { it.id == templateId }
+        ?.titleTemplate
+        ?.substringBefore("[")
+        ?.trim()
+    return title ?: templateId
 }
 
 private fun formatDayStartTime(minutes: Int): String {

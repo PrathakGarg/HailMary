@@ -33,6 +33,7 @@ fun MissionCard(
     mission: Mission,
     onClick: () -> Unit,
     onComplete: (() -> Unit)? = null,
+    onReset: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val diffColor = difficultyColor(mission.difficulty)
@@ -253,20 +254,60 @@ fun MissionCard(
                     // Right side: status or complete button
                     when {
                         isCompleted -> {
-                            Icon(
-                                Icons.Filled.CheckCircle,
-                                contentDescription = "Completed",
-                                tint = EmeraldCore,
-                                modifier = Modifier.size(28.dp)
-                            )
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Icon(
+                                    Icons.Filled.CheckCircle,
+                                    contentDescription = "Completed",
+                                    tint = EmeraldCore,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                                if (onReset != null) {
+                                    IconButton(
+                                        onClick = onReset,
+                                        modifier = Modifier
+                                            .size(32.dp)
+                                            .testTag("mission_reset_${mission.id}")
+                                    ) {
+                                        Icon(
+                                            Icons.Filled.Restore,
+                                            contentDescription = "Reset mission",
+                                            tint = TextSecondary,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
+                                }
+                            }
                         }
                         isFailed -> {
-                            Icon(
-                                Icons.Filled.Cancel,
-                                contentDescription = "Failed",
-                                tint = CrimsonCore,
-                                modifier = Modifier.size(28.dp)
-                            )
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Icon(
+                                    Icons.Filled.Cancel,
+                                    contentDescription = "Failed",
+                                    tint = CrimsonCore,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                                if (onReset != null) {
+                                    IconButton(
+                                        onClick = onReset,
+                                        modifier = Modifier
+                                            .size(32.dp)
+                                            .testTag("mission_reset_${mission.id}")
+                                    ) {
+                                        Icon(
+                                            Icons.Filled.Restore,
+                                            contentDescription = "Reset mission",
+                                            tint = TextSecondary,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
+                                }
+                            }
                         }
                         onComplete != null -> {
                             IconButton(

@@ -31,6 +31,9 @@ interface UserProfileDao {
     @Query("UPDATE user_profile SET total_missions_completed = total_missions_completed + 1, total_xp_earned = total_xp_earned + :xpGained WHERE id = 1")
     suspend fun incrementMissionStats(xpGained: Long)
 
+    @Query("UPDATE user_profile SET total_missions_completed = MAX(0, total_missions_completed - :completedDelta), total_xp_earned = MAX(0, total_xp_earned - :xpDelta) WHERE id = 1")
+    suspend fun decrementMissionStats(completedDelta: Int, xpDelta: Long)
+
     @Query("UPDATE user_profile SET streak_shields = :shields WHERE id = 1")
     suspend fun updateShields(shields: Int)
 

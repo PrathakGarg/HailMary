@@ -20,7 +20,9 @@ data class MissionDetailUiState(
     val isLoading: Boolean = true,
     val completionResult: CompletionResult? = null,
     val failResult: FailResult? = null,
-    val actionCompleted: Boolean = false
+    val actionCompleted: Boolean = false,
+    val deprioritizeReplaced: Boolean = false,
+    val deprioritizeError: Boolean = false
 )
 
 @HiltViewModel
@@ -29,7 +31,8 @@ class MissionDetailViewModel @Inject constructor(
     private val missionRepository: MissionRepository,
     private val userRepository: UserRepository,
     private val completeMission: CompleteMissionUseCase,
-    private val failMission: FailMissionUseCase
+    private val failMission: FailMissionUseCase,
+    private val deprioritizeMissionTemplate: DeprioritizeMissionTemplateUseCase
 ) : ViewModel() {
 
     private val missionId: String = checkNotNull(savedStateHandle["missionId"])
@@ -64,6 +67,18 @@ class MissionDetailViewModel @Inject constructor(
             val profile = _uiState.value.profile ?: return@launch
             val result = failMission(mission, profile)
             _uiState.update { it.copy(failResult = result, actionCompleted = true) }
+        }
+    }
+
+    fun deprioritizeAndReplace() {
+        viewModelScope.launch {
+            val mission = _uiState.value.mission ?: return@launch
+            val replaced = deprioritizeMissionTemplate(mission.id)
+            if (replaced) {
+                _uiState.update { it.copy(deprioritizeReplaced = true, deprioritizeError = false) }
+            } else {
+                _uiState.update { it.copy(deprioritizeError = true) }
+            }
         }
     }
 }

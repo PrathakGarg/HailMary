@@ -180,6 +180,21 @@ class MissionGenerator @Inject constructor(
         )
     }
 
+    fun generateSingleDailyMission(
+        profile: UserProfile,
+        templateId: String,
+        date: LocalDate,
+        shadowCompletions: Int = 0
+    ): Mission? {
+        val template = MissionTemplates.all.firstOrNull { it.id == templateId } ?: return null
+        val personalMult = personalGrowthMultiplier(shadowCompletions, profile.adaptiveDifficulty)
+        val safeMult = if (profile.adaptiveDifficulty < 0.7f)
+            profile.adaptiveDifficulty
+        else
+            (profile.adaptiveDifficulty * personalMult).coerceIn(0.3f, 2.5f)
+        return instantiateTemplate(template, safeMult, date, streakCount = shadowCompletions)
+    }
+
     /**
      * Personal growth multiplier based on how many times a hunter has done this specific template.
      * Grows slowly and caps at 1.7× to prevent burnout.

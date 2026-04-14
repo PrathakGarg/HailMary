@@ -25,6 +25,7 @@ data class SettingsUiState(
     val dayStartMinutes: Int = 270,
     val activeFocusThemes: Set<FocusTheme> = setOf(FocusTheme.PHYSICAL_PERFORMANCE, FocusTheme.MENTAL_CLARITY),
     val excludeInboxMissions: Boolean = true,
+    val deprioritizedTemplateIds: Set<String> = emptySet(),
     val isSaved: Boolean = false
 )
 
@@ -37,12 +38,20 @@ class SettingsViewModel @Inject constructor(
     private val regenerateCurrentMissions: RegenerateCurrentMissionsUseCase
 ) : ViewModel() {
 
+    private data class SettingsCoreState(
+        val profile: UserProfile?,
+        val notificationHour: Int,
+        val dayStartMinutes: Int,
+        val activeFocusThemes: Set<FocusTheme>,
+        val excludeInboxMissions: Boolean
+    )
+
     private val _uiState = MutableStateFlow(SettingsUiState())
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
 
     init {
         viewModelScope.launch {
-            combine(
+            val coreFlow = combine(
                 userRepository.observeUserProfile(),
                 dataStore.notificationHour,
                 dataStore.dayStartMinutes,
@@ -52,12 +61,23 @@ class SettingsViewModel @Inject constructor(
                 val themes = themeNames.mapNotNull { name ->
                     FocusTheme.entries.find { it.name == name }
                 }.toSet().ifEmpty { setOf(FocusTheme.PHYSICAL_PERFORMANCE, FocusTheme.MENTAL_CLARITY) }
-                SettingsUiState(
+                SettingsCoreState(
                     profile = profile,
                     notificationHour = notifHour,
                     dayStartMinutes = dayStartMinutes,
                     activeFocusThemes = themes,
                     excludeInboxMissions = excludeInboxMissions
+                )
+            }
+
+            combine(coreFlow, dataStore.deprioritizedTemplateIds) { core, deprioritizedTemplateIds ->
+                SettingsUiState(
+                    profile = core.profile,
+                    notificationHour = core.notificationHour,
+                    dayStartMinutes = core.dayStartMinutes,
+                    activeFocusThemes = core.activeFocusThemes,
+                    excludeInboxMissions = core.excludeInboxMissions,
+                    deprioritizedTemplateIds = deprioritizedTemplateIds
                 )
             }.collect { _uiState.value = it }
         }
@@ -128,6 +148,19 @@ class SettingsViewModel @Inject constructor(
     fun setExcludeInboxMissions(exclude: Boolean) {
         viewModelScope.launch {
             dataStore.setExcludeInboxMissions(exclude)
+        }
+    }
+
+    fun clearDeprioritizedTemplates() {
+        viewModelScope.launch {
+            dataStore.setDeprioritizedTemplateIds(emptySet())
+        }
+    }
+
+    fun removeDeprioritizedTemplate(templateId: String) {
+        viewModelScope.launch {
+            val updated = _uiState.value.deprioritizedTemplateIds - templateId
+            dataStore.setDeprioritizedTemplateIds(updated)
         }
     }
 }

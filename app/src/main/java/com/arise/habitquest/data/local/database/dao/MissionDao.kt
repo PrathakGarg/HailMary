@@ -25,6 +25,9 @@ interface MissionDao {
     @Query("SELECT * FROM missions WHERE id = :id")
     suspend fun getMissionById(id: String): MissionEntity?
 
+    @Query("DELETE FROM missions WHERE id = :id")
+    suspend fun deleteMissionById(id: String)
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertMissions(missions: List<MissionEntity>)
 
@@ -48,6 +51,9 @@ interface MissionDao {
 
     @Query("UPDATE missions SET is_skipped = 1 WHERE id = :id")
     suspend fun markSkipped(id: String)
+
+    @Query("UPDATE missions SET is_completed = 0, is_failed = 0, is_skipped = 0, accepted_mini_version = 0, streak_count = 0, completed_at = NULL WHERE id = :id")
+    suspend fun resetOutcome(id: String)
 
     @Query("DELETE FROM missions WHERE due_date < :cutoffDate AND type = 'DAILY'")
     suspend fun pruneOldDailyMissions(cutoffDate: String)

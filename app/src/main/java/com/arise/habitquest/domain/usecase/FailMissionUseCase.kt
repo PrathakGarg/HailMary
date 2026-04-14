@@ -1,5 +1,7 @@
 package com.arise.habitquest.domain.usecase
 
+import com.arise.habitquest.data.local.datastore.OnboardingDataStore
+import com.arise.habitquest.domain.model.MissionRollbackEntry
 import com.arise.habitquest.domain.model.Mission
 import com.arise.habitquest.domain.model.UserProfile
 import com.arise.habitquest.domain.repository.MissionRepository
@@ -15,7 +17,8 @@ data class FailResult(
 
 class FailMissionUseCase @Inject constructor(
     private val missionRepository: MissionRepository,
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val dataStore: OnboardingDataStore
 ) {
     suspend operator fun invoke(mission: Mission, profile: UserProfile): FailResult {
         missionRepository.markFailed(mission.id)
@@ -54,6 +57,23 @@ class FailMissionUseCase @Inject constructor(
         }
 
         val penaltyZoneTriggered = !isGraceDay && (profile.hp - hpDeducted) <= 0
+
+        dataStore.setMissionRollbackEntry(
+            mission.id,
+            MissionRollbackEntry(
+                recordedAtMillis = System.currentTimeMillis(),
+                xpDelta = -xpDeducted.toLong(),
+                hpDelta = -hpDeducted,
+                strDelta = 0,
+                agiDelta = 0,
+                intDelta = 0,
+                vitDelta = 0,
+                endDelta = 0,
+                senseDelta = 0,
+                missionCountDelta = 0,
+                totalXpEarnedDelta = 0L
+            )
+        )
 
         return FailResult(
             xpDeducted = xpDeducted,

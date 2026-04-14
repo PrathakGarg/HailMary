@@ -7,6 +7,7 @@ import com.arise.habitquest.domain.model.Mission
 import com.arise.habitquest.domain.model.MissionType
 import com.arise.habitquest.domain.repository.MissionRepository
 import com.arise.habitquest.domain.repository.UserRepository
+import com.arise.habitquest.domain.usecase.ResetMissionOutcomeUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
@@ -29,6 +30,7 @@ data class MissionBoardUiState(
 class MissionBoardViewModel @Inject constructor(
     private val missionRepository: MissionRepository,
     private val userRepository: UserRepository,
+    private val resetMissionOutcome: ResetMissionOutcomeUseCase,
     private val timeProvider: TimeProvider
 ) : ViewModel() {
 
@@ -78,5 +80,11 @@ class MissionBoardViewModel @Inject constructor(
 
     fun selectTab(tab: Int) {
         _uiState.update { it.copy(selectedTab = tab) }
+    }
+
+    fun resetMissionOutcome(missionId: String) {
+        viewModelScope.launch {
+            resetMissionOutcome(missionId)
+        }
     }
 }

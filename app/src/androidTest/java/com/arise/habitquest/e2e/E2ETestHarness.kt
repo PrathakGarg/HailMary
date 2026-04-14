@@ -443,7 +443,7 @@ object E2ETestHarness {
         val timeProvider = TimeProvider.getInstance(context)
         val dataStore = OnboardingDataStore(context)
         val generator = MissionGenerator(timeProvider)
-        val missionRepository = MissionRepositoryImpl(db.missionDao(), MissionMapper(), timeProvider)
+        val missionRepository = MissionRepositoryImpl(db.missionDao(), MissionMapper(), timeProvider, context)
         val userRepository = UserRepositoryImpl(db.userProfileDao(), db.shadowDao(), UserProfileMapper())
         val generateDailyMissions = GenerateDailyMissionsUseCase(
             missionRepository = missionRepository,

@@ -238,7 +238,7 @@ class SettingsActionsNightlyTest {
         val db = AppDatabase.getInstance(context)
         val dataStore = OnboardingDataStore(context)
         val timeProvider = TimeProvider.getInstance(context)
-        val missionRepo = MissionRepositoryImpl(db.missionDao(), MissionMapper(), timeProvider)
+        val missionRepo = MissionRepositoryImpl(db.missionDao(), MissionMapper(), timeProvider, context)
         val userRepo = UserRepositoryImpl(db.userProfileDao(), db.shadowDao(), UserProfileMapper())
         val generator = MissionGenerator(timeProvider)
         val generateDailyMissions = GenerateDailyMissionsUseCase(

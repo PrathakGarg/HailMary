@@ -24,6 +24,8 @@ class GenerateDailyMissionsUseCase @Inject constructor(
     private val inboxMissionTemplateIds = setOf("tpl_inbox_zero", "tpl_two_minute_sweep")
 
     suspend operator fun invoke(profile: UserProfile, date: LocalDate) {
+        dataStore.pruneMissionRollbackLedger()
+
         val onboardingConfig = parseOnboardingConfig(profile)
         val baseTemplateIds = onboardingConfig.templateIds
         if (baseTemplateIds.isEmpty()) return
@@ -34,11 +36,12 @@ class GenerateDailyMissionsUseCase @Inject constructor(
 
         // Fetch active focus themes from DataStore
         val focusThemes = dataStore.focusThemes.first()
-        val excludedTemplateIds = if (dataStore.excludeInboxMissions.first()) {
+        val deprioritizedTemplateIds = dataStore.deprioritizedTemplateIds.first()
+        val excludedTemplateIds = (if (dataStore.excludeInboxMissions.first()) {
             inboxMissionTemplateIds
         } else {
             emptySet()
-        }
+        }) + deprioritizedTemplateIds
 
         val recentTemplateIds = missionRepository
             .getMissionsInRange(date.minusDays(3).toString(), date.minusDays(1).toString())

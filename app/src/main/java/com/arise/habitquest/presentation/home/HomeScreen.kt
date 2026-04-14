@@ -128,6 +128,9 @@ fun HomeScreen(
                                 onComplete = if (mission.isActive) {
                                     { viewModel.quickCompleteMission(mission) }
                                 } else null,
+                                onReset = if (!mission.isActive) {
+                                    { viewModel.resetMissionOutcome(mission.id) }
+                                } else null,
                                 modifier = Modifier.width(260.dp)
                             )
                         }

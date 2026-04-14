@@ -1,8 +1,10 @@
 package com.arise.habitquest.domain.usecase
 
 import com.arise.habitquest.domain.model.Achievement
+import com.arise.habitquest.domain.model.MissionRollbackEntry
 import com.arise.habitquest.domain.model.Mission
 import com.arise.habitquest.domain.model.UserProfile
+import com.arise.habitquest.data.local.datastore.OnboardingDataStore
 import com.arise.habitquest.data.time.TimeProvider
 import com.arise.habitquest.domain.repository.MissionRepository
 import com.arise.habitquest.domain.repository.UserRepository
@@ -20,6 +22,7 @@ data class CompletionResult(
 class CompleteMissionUseCase @Inject constructor(
     private val missionRepository: MissionRepository,
     private val userRepository: UserRepository,
+    private val dataStore: OnboardingDataStore,
     private val timeProvider: TimeProvider,
     private val checkLevelUp: CheckLevelUpUseCase,
     private val unlockAchievement: UnlockAchievementUseCase
@@ -80,6 +83,23 @@ class CompleteMissionUseCase @Inject constructor(
         // is already in the DB and a single pass handles every pending level.
         val profileForLevelCheck = userRepository.getUserProfile() ?: updatedProfile
         val levelUpResult = checkLevelUp(profileForLevelCheck)
+
+        dataStore.setMissionRollbackEntry(
+            mission.id,
+            MissionRollbackEntry(
+                recordedAtMillis = System.currentTimeMillis(),
+                xpDelta = effectiveXp.toLong(),
+                hpDelta = hpRestored,
+                strDelta = mission.statRewards[com.arise.habitquest.domain.model.Stat.STR] ?: 0,
+                agiDelta = mission.statRewards[com.arise.habitquest.domain.model.Stat.AGI] ?: 0,
+                intDelta = mission.statRewards[com.arise.habitquest.domain.model.Stat.INT] ?: 0,
+                vitDelta = mission.statRewards[com.arise.habitquest.domain.model.Stat.VIT] ?: 0,
+                endDelta = mission.statRewards[com.arise.habitquest.domain.model.Stat.END] ?: 0,
+                senseDelta = mission.statRewards[com.arise.habitquest.domain.model.Stat.SENSE] ?: 0,
+                missionCountDelta = 1,
+                totalXpEarnedDelta = effectiveXp.toLong()
+            )
+        )
 
         return CompletionResult(
             xpGained = effectiveXp,

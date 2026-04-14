@@ -106,7 +106,7 @@ class NotificationWorkerNightlyTest {
         // Seed profile, but no missions
         val db = AppDatabase.getInstance(context)
         val timeProvider = TimeProvider.getInstance(context)
-        val missionRepo = MissionRepositoryImpl(db.missionDao(), MissionMapper(), timeProvider)
+        val missionRepo = MissionRepositoryImpl(db.missionDao(), MissionMapper(), timeProvider, context)
         val userRepo = UserRepositoryImpl(db.userProfileDao(), db.shadowDao(), UserProfileMapper())
         seedProfile(context, sessionDate)
 
@@ -339,7 +339,7 @@ class NotificationWorkerNightlyTest {
         val db = AppDatabase.getInstance(context)
         val timeProvider = TimeProvider.getInstance(context)
         val dataStore = OnboardingDataStore(context)
-        val missionRepo = MissionRepositoryImpl(db.missionDao(), MissionMapper(), timeProvider)
+        val missionRepo = MissionRepositoryImpl(db.missionDao(), MissionMapper(), timeProvider, context)
         val userRepo = UserRepositoryImpl(db.userProfileDao(), db.shadowDao(), UserProfileMapper())
 
         seedProfile(context, sessionDate)
@@ -385,7 +385,7 @@ class NotificationWorkerNightlyTest {
         val db = AppDatabase.getInstance(context)
         val timeProvider = TimeProvider.getInstance(context)
         val dataStore = OnboardingDataStore(context)
-        val missionRepo = MissionRepositoryImpl(db.missionDao(), MissionMapper(), timeProvider)
+        val missionRepo = MissionRepositoryImpl(db.missionDao(), MissionMapper(), timeProvider, context)
         val userRepo = UserRepositoryImpl(db.userProfileDao(), db.shadowDao(), UserProfileMapper())
 
         // Pre-set the lastMonthlyReport to indicate the report was already sent
@@ -431,7 +431,7 @@ class NotificationWorkerNightlyTest {
         )
         val db = AppDatabase.getInstance(context)
         val timeProvider = TimeProvider.getInstance(context)
-        return MissionRepositoryImpl(db.missionDao(), MissionMapper(), timeProvider) to
+        return MissionRepositoryImpl(db.missionDao(), MissionMapper(), timeProvider, context) to
                 UserRepositoryImpl(db.userProfileDao(), db.shadowDao(), UserProfileMapper())
     }
 

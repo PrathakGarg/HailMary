@@ -11,6 +11,7 @@ interface MissionRepository {
     fun observePenaltyZone(): Flow<List<Mission>>
     suspend fun getMissionsForDate(date: LocalDate): List<Mission>
     suspend fun getMissionById(id: String): Mission?
+    suspend fun deleteMissionById(id: String)
     suspend fun insertMissions(missions: List<Mission>)
     suspend fun insertMission(mission: Mission)
     suspend fun deleteDailyMissionsForDate(date: LocalDate)
@@ -18,6 +19,7 @@ interface MissionRepository {
     suspend fun markCompleted(id: String, streak: Int, usedMini: Boolean)
     suspend fun markFailed(id: String)
     suspend fun markSkipped(id: String)
+    suspend fun resetOutcome(id: String)
     suspend fun pruneOldDailyMissions(cutoffDate: LocalDate)
     suspend fun countCompletedForDate(date: LocalDate): Int
     suspend fun countDailyMissionsForDate(date: LocalDate): Int

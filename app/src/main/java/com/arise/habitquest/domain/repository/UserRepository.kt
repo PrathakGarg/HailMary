@@ -14,6 +14,7 @@ interface UserRepository {
     suspend fun updateStreak(current: Int, best: Int)
     suspend fun updateStats(stats: HunterStats)
     suspend fun incrementMissionStats(xpGained: Long)
+    suspend fun decrementMissionStats(completedDelta: Int, xpDelta: Long)
     suspend fun updateShields(shields: Int)
     suspend fun updateAdaptiveDifficulty(difficulty: Float)
     suspend fun incrementDayCount()
