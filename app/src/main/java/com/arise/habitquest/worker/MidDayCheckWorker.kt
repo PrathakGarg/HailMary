@@ -99,7 +99,7 @@ class MidDayCheckWorker @AssistedInject constructor(
 
     companion object {
         const val WORK_NAME = "arise_midday_check"
-        private const val NOTIFICATION_ID = 1004
+        private const val NOTIFICATION_ID = 1006
 
         fun schedule(workManager: WorkManager) {
             val now = LocalTime.now()

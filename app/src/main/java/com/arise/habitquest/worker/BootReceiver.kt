@@ -4,6 +4,9 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import androidx.work.WorkManager
+import com.arise.habitquest.data.local.datastore.OnboardingDataStore
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 
 class BootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
@@ -12,11 +15,11 @@ class BootReceiver : BroadcastReceiver() {
         ) {
             val tp = com.arise.habitquest.data.time.TimeProvider.getInstance(context)
             val workManager = WorkManager.getInstance(context)
+            val notificationHour = runBlocking {
+                OnboardingDataStore(context.applicationContext).notificationHour.first()
+            }
             DailyResetWorker.schedule(workManager, tp)
-            MorningNotificationWorker.schedule(workManager, hourOfDay = tp.resetHour.coerceAtLeast(6).let {
-                // Morning notification should always be after the reset; default to 8 if reset is early
-                if (it < 6) 8 else it
-            })
+            MorningNotificationWorker.schedule(workManager, hourOfDay = notificationHour)
             PreResetReminderWorker.schedule(workManager, tp)
             MidDayCheckWorker.schedule(workManager)
             EveningReminderWorker.schedule(workManager)
