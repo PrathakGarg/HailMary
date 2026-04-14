@@ -19,6 +19,7 @@ import com.arise.habitquest.domain.model.Difficulty
 import com.arise.habitquest.domain.model.MissionCategory
 import com.arise.habitquest.domain.model.MissionType
 import com.arise.habitquest.domain.repository.UserRepository
+import com.arise.habitquest.domain.usecase.ApplyDailyResetUseCase
 import com.arise.habitquest.domain.usecase.CheckLevelUpUseCase
 import com.arise.habitquest.domain.usecase.CompleteMissionUseCase
 import com.arise.habitquest.domain.usecase.GenerateDailyMissionsUseCase
@@ -27,6 +28,7 @@ import com.arise.habitquest.domain.usecase.UnlockAchievementUseCase
 import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -134,10 +136,86 @@ class RegressionMatrixNightlyTest {
         assertTrue(missions.none { it.id == "regen_old" })
     }
 
+    @Test
+    fun rolloverPunishments_partialCompliance_appliesLiveHpAndXpLoss() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        E2ETestHarness.pinTrustedTime(LocalDateTime.of(2026, 4, 15, 9, 0), context = context)
+        val sessionDate = E2ETestHarness.getSessionDay(context)
+        val expiringDate = sessionDate.minusDays(1)
+
+        seedBaseProfile(
+            context = context,
+            sessionDate = sessionDate,
+            restDay = 4,
+            xp = 120L,
+            hp = 100
+        )
+        E2ETestHarness.insertMission(
+            regressionMission(
+                id = "rollover_done",
+                dueDate = expiringDate,
+                isCompleted = true
+            ),
+            context
+        )
+        E2ETestHarness.insertMission(
+            regressionMission(
+                id = "rollover_missed",
+                dueDate = expiringDate,
+                penaltyXp = 7,
+                penaltyHp = 9
+            ),
+            context
+        )
+
+        val deps = buildDeps(context)
+        runBlocking { deps.applyDailyResetUseCase() }
+
+        val finalProfile = requireNotNull(E2ETestHarness.getUserProfileEntity(context))
+        assertEquals(113L, finalProfile.xp)
+        assertEquals(91, finalProfile.hp)
+
+        val dailyLog = runBlocking { AppDatabase.getInstance(context).dailyLogDao().getLogForDate(expiringDate.toString()) }
+        assertNotNull(dailyLog)
+        assertEquals(7, dailyLog?.xpLost)
+        assertEquals(9, dailyLog?.hpLost)
+    }
+
+    @Test
+    fun missionVariety_consecutiveDays_doNotReuseSameDailySet() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val firstDate = LocalDate.of(2026, 4, 14)
+        val secondDate = firstDate.plusDays(1)
+
+        seedBaseProfile(context, firstDate, restDay = 4)
+
+        val deps = buildDeps(context)
+        runBlocking {
+            val profile = requireNotNull(deps.userRepository.getUserProfile())
+            deps.generateDailyMissionsUseCase(profile, firstDate)
+            deps.generateDailyMissionsUseCase(profile, secondDate)
+        }
+
+        val firstTemplateSet = E2ETestHarness
+            .getMissionsForDate(firstDate, context)
+            .mapNotNull { it.parentTemplateId }
+            .toSet()
+        val secondTemplateSet = E2ETestHarness
+            .getMissionsForDate(secondDate, context)
+            .mapNotNull { it.parentTemplateId }
+            .toSet()
+
+        assertTrue(firstTemplateSet.isNotEmpty())
+        assertTrue(secondTemplateSet.isNotEmpty())
+        assertNotEquals(firstTemplateSet, secondTemplateSet)
+    }
+
     private fun seedBaseProfile(
         context: Context,
         sessionDate: LocalDate,
         restDay: Int,
+        xp: Long = 0L,
+        hp: Int = 100,
         streakCurrent: Int = 2,
         streakBest: Int = 3
     ) {
@@ -158,15 +236,15 @@ class RegressionMatrixNightlyTest {
                 title = "The Unawakened",
                 rank = "E",
                 level = 1,
-                xp = 0L,
+                xp = xp,
                 xpToNextLevel = 100L,
-                hp = 100,
+                hp = hp,
                 maxHp = 100,
                 streakCurrent = streakCurrent,
                 streakBest = streakBest,
                 daysSinceJoin = 9,
                 onboardingComplete = true,
-                onboardingAnswersJson = "{\"templateIds\":[\"tpl_push_ups\",\"tpl_deep_work\",\"tpl_meditation\"]}",
+                onboardingAnswersJson = "{\"templateIds\":[\"tpl_push_ups\",\"tpl_deep_work\",\"tpl_meditation\"],\"goals\":[\"BUILD_DISCIPLINE\",\"GET_STRONGER\",\"REDUCE_STRESS\"]}",
                 joinDate = sessionDate.minusDays(9).toString(),
                 restDay = restDay
             ),
@@ -174,7 +252,13 @@ class RegressionMatrixNightlyTest {
         )
     }
 
-    private fun regressionMission(id: String, dueDate: LocalDate) = MissionEntity(
+    private fun regressionMission(
+        id: String,
+        dueDate: LocalDate,
+        penaltyXp: Int = 5,
+        penaltyHp: Int = 5,
+        isCompleted: Boolean = false
+    ) = MissionEntity(
         id = id,
         title = "Regression Mission $id",
         description = "Regression matrix mission.",
@@ -184,9 +268,11 @@ class RegressionMatrixNightlyTest {
         category = MissionCategory.PHYSICAL.name,
         difficulty = Difficulty.E.name,
         xpReward = 20,
-        penaltyXp = 5,
-        penaltyHp = 5,
+        penaltyXp = penaltyXp,
+        penaltyHp = penaltyHp,
         statRewardsJson = JSONObject(mapOf("STR" to 1)).toString(),
+        isCompleted = isCompleted,
+        completedAt = if (isCompleted) System.currentTimeMillis() else null,
         dueDate = dueDate.toString(),
         scheduledTimeHint = "MORNING",
         iconName = MissionCategory.PHYSICAL.iconName
@@ -196,6 +282,8 @@ class RegressionMatrixNightlyTest {
         val missionRepository: MissionRepositoryImpl,
         val userRepository: UserRepository,
         val completeMissionUseCase: CompleteMissionUseCase,
+        val generateDailyMissionsUseCase: GenerateDailyMissionsUseCase,
+        val applyDailyResetUseCase: ApplyDailyResetUseCase,
         val regenerateCurrentMissionsUseCase: RegenerateCurrentMissionsUseCase
     )
 
@@ -225,6 +313,15 @@ class RegressionMatrixNightlyTest {
             generator = generator,
             dataStore = dataStore
         )
+        val applyDailyReset = ApplyDailyResetUseCase(
+            userRepository = userRepository,
+            missionRepository = missionRepository,
+            dailyLogDao = db.dailyLogDao(),
+            generateDailyMissions = generateDailyMissions,
+            generator = generator,
+            dataStore = dataStore,
+            timeProvider = timeProvider
+        )
         val regenerateCurrentMissions = RegenerateCurrentMissionsUseCase(
             userRepository = userRepository,
             missionRepository = missionRepository,
@@ -236,6 +333,8 @@ class RegressionMatrixNightlyTest {
             missionRepository = missionRepository,
             userRepository = userRepository,
             completeMissionUseCase = completeMission,
+            generateDailyMissionsUseCase = generateDailyMissions,
+            applyDailyResetUseCase = applyDailyReset,
             regenerateCurrentMissionsUseCase = regenerateCurrentMissions
         )
     }

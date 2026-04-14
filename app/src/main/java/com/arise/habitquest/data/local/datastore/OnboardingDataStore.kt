@@ -32,6 +32,7 @@ class OnboardingDataStore @Inject constructor(
         val LAST_MONTHLY_REPORT = stringPreferencesKey("last_monthly_report") // "YYYY-MM" of last sent
         val DAY_START_MINUTES = intPreferencesKey("day_start_minutes")         // minute-of-day, 30-min granularity
         val DAY_START_HOUR = intPreferencesKey("day_start_hour")               // legacy key fallback
+        val EXCLUDE_INBOX_MISSIONS = booleanPreferencesKey("exclude_inbox_missions")
     }
 
     val onboardingComplete: Flow<Boolean> = context.dataStore.data
@@ -85,6 +86,15 @@ class OnboardingDataStore @Inject constructor(
     suspend fun setFocusThemes(themes: Set<String>) {
         context.dataStore.edit { prefs ->
             prefs[Keys.FOCUS_THEMES] = themes.joinToString(",")
+        }
+    }
+
+    val excludeInboxMissions: Flow<Boolean> = context.dataStore.data
+        .map { prefs -> prefs[Keys.EXCLUDE_INBOX_MISSIONS] ?: true }
+
+    suspend fun setExcludeInboxMissions(exclude: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.EXCLUDE_INBOX_MISSIONS] = exclude
         }
     }
 

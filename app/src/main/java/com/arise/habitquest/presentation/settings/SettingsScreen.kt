@@ -80,6 +80,44 @@ fun SettingsScreen(
                 )
             }
 
+            SettingsSection("MISSION FILTERS") {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(BackgroundCard)
+                        .border(1.dp, BorderDefault, RoundedCornerShape(8.dp))
+                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(2.dp)
+                    ) {
+                        Text(
+                            "Exclude Inbox / Debris Missions",
+                            style = AriseTypography.bodyMedium.copy(color = TextPrimary)
+                        )
+                        Text(
+                            "Hides tasks like Inbox Zero and 2-minute sweep from daily rotation.",
+                            style = AriseTypography.bodySmall.copy(color = TextSecondary)
+                        )
+                    }
+                    Switch(
+                        checked = state.excludeInboxMissions,
+                        onCheckedChange = viewModel::setExcludeInboxMissions,
+                        modifier = Modifier.testTag("settings_exclude_inbox_switch"),
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = PurpleCore,
+                            checkedTrackColor = PurpleFaint,
+                            uncheckedThumbColor = TextDim,
+                            uncheckedTrackColor = BackgroundSurface
+                        )
+                    )
+                }
+            }
+
             // ── Rest day ──────────────────────────────────────────────────
             SettingsSection("REST DAY") {
                 DayOfWeek.entries.forEach { day ->

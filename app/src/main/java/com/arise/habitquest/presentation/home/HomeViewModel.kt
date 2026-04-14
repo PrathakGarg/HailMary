@@ -2,6 +2,7 @@ package com.arise.habitquest.presentation.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.arise.habitquest.data.local.database.dao.DailyLogDao
 import com.arise.habitquest.data.time.TimeProvider
 import com.arise.habitquest.domain.model.Mission
 import com.arise.habitquest.domain.model.MissionType
@@ -27,6 +28,7 @@ data class HomeUiState(
     val showSystemNotification: Boolean = false,
     val notificationMessage: String = "",
     val pendingRankUp: String = "",
+    val previousDaySummary: PreviousDaySummary? = null,
     val currentDate: LocalDate = LocalDate.MIN,
     val minutesUntilReset: Long = Long.MAX_VALUE,
     val isLoading: Boolean = true
@@ -36,10 +38,20 @@ data class HomeUiState(
     val completionPercent: Float get() = if (totalCount > 0) completedCount.toFloat() / totalCount else 0f
 }
 
+data class PreviousDaySummary(
+    val date: LocalDate,
+    val completionRate: Float,
+    val totalMissions: Int,
+    val xpLost: Int,
+    val hpLost: Int,
+    val wasRestDay: Boolean
+)
+
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val userRepository: UserRepository,
     private val missionRepository: MissionRepository,
+    private val dailyLogDao: DailyLogDao,
     private val completeMission: CompleteMissionUseCase,
     private val failMission: FailMissionUseCase,
     private val dataStore: OnboardingDataStore,
@@ -75,7 +87,18 @@ class HomeViewModel @Inject constructor(
                 _uiState.update { it.copy(minutesUntilReset = mins) }
                 if (sessionDay != currentSessionDate) {
                     currentSessionDate = sessionDay
-                    _uiState.update { it.copy(currentDate = sessionDay) }
+                    val previousLog = dailyLogDao.getLogForDate(sessionDay.minusDays(1).toString())
+                    val previousDaySummary = previousLog?.let { log ->
+                        PreviousDaySummary(
+                            date = sessionDay.minusDays(1),
+                            completionRate = log.completionRate,
+                            totalMissions = log.totalMissions,
+                            xpLost = log.xpLost,
+                            hpLost = log.hpLost,
+                            wasRestDay = log.wasRestDay
+                        )
+                    }
+                    _uiState.update { it.copy(currentDate = sessionDay, previousDaySummary = previousDaySummary) }
                     missionJob?.cancel()
                     missionJob = launch {
                         missionRepository.observeMissionsForDate(sessionDay).collect { missions ->

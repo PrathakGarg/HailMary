@@ -41,3 +41,5 @@ local.properties
 # NDK / CMake
 .externalNativeBuild/
 .cxx/
+
+plans/

@@ -40,9 +40,45 @@ class ApplyDailyResetUseCase @Inject constructor(
         val completionRate = if (totalExpiring > 0) completed.size.toFloat() / totalExpiring else 0f
 
         val xpGained = completed.sumOf { it.effectiveXpReward }
-        val xpLost = failed.sumOf { it.penaltyXp }
-        val hpLost = failed.sumOf { it.penaltyHp }
+        val hadAnyCompletion = completed.isNotEmpty()
+        val fullMissDay = !expiringWasRestDay && completed.isEmpty() && totalExpiring > 0
+        val newMissDays = if (fullMissDay) profile.consecutiveMissDays + 1 else 0
+        val isGraceDay = fullMissDay && newMissDays == 1 && !profile.pendingWarning
+
+        val xpLost = if (expiringWasRestDay || isGraceDay) {
+            0
+        } else {
+            failed.sumOf { mission ->
+                if (mission.isSystemMandate) mission.penaltyXp / 2 else mission.penaltyXp
+            }
+        }
+        val hpLost = if (expiringWasRestDay || isGraceDay) {
+            0
+        } else {
+            failed.sumOf { mission ->
+                if (mission.isSystemMandate) 0 else mission.penaltyHp
+            }
+        }
         val hpGained = completed.size * 5
+
+        if (fullMissDay) {
+            userRepository.updateMissState(newMissDays, isGraceDay)
+        } else {
+            userRepository.updateMissState(0, false)
+        }
+
+        if (xpLost > 0) {
+            val nextXp = (profile.xp - xpLost).coerceAtLeast(0L)
+            userRepository.updateXpAndLevel(nextXp, profile.level, profile.rank, profile.xpToNextLevel)
+        }
+
+        val hpAfterPenalty = if (hpLost > 0) {
+            val nextHp = (profile.hp - hpLost).coerceAtLeast(0)
+            userRepository.updateHp(nextHp)
+            nextHp
+        } else {
+            profile.hp
+        }
 
         val systemMessage = generator.generateSystemMessage(completionRate, profile.streakCurrent, profile.rank)
 
@@ -72,10 +108,10 @@ class ApplyDailyResetUseCase @Inject constructor(
         // HP regeneration
         if (currentSessionIsRestDay) {
             val regenHp = (profile.maxHp * 0.30f).toInt()
-            userRepository.updateHp((profile.hp + regenHp).coerceAtMost(profile.maxHp))
+            userRepository.updateHp((hpAfterPenalty + regenHp).coerceAtMost(profile.maxHp))
         } else if (completionRate >= 0.6f) {
             val regenHp = (profile.maxHp * 0.10f).toInt()
-            userRepository.updateHp((profile.hp + regenHp).coerceAtMost(profile.maxHp))
+            userRepository.updateHp((hpAfterPenalty + regenHp).coerceAtMost(profile.maxHp))
         }
 
         // Adaptive difficulty update (weekly)

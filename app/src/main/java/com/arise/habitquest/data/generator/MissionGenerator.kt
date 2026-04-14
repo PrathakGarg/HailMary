@@ -10,6 +10,7 @@ import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.roundToInt
+import kotlin.random.Random
 
 /**
  * Converts OnboardingAnswers into a personalised initial set of Missions + a
@@ -20,6 +21,13 @@ import kotlin.math.roundToInt
 class MissionGenerator @Inject constructor(
     private val timeProvider: TimeProvider
 ) {
+
+    data class DailyTemplateSelection(
+        val anchorIds: List<String>,
+        val rotatingIds: List<String>
+    ) {
+        val allIds: List<String> get() = anchorIds + rotatingIds
+    }
 
     // ── Initial generation (post-onboarding) ─────────────────────────────────
 
@@ -96,12 +104,15 @@ class MissionGenerator @Inject constructor(
         templateIds: List<String>,
         date: LocalDate,
         shadowCompletions: Map<String, Int> = emptyMap(),
-        focusThemeNames: Set<String> = emptySet()
+        focusThemeNames: Set<String> = emptySet(),
+        excludedTemplateIds: Set<String> = emptySet()
     ): List<Mission> {
+        val allowedTemplateIds = templateIds.filterNot { it in excludedTemplateIds }
+
         // If focus themes are active, potentially swap one template to better match them
         val effectiveIds = if (focusThemeNames.isNotEmpty()) {
-            injectFocusThemeTemplate(templateIds, focusThemeNames, profile)
-        } else templateIds
+            injectFocusThemeTemplate(allowedTemplateIds, focusThemeNames, profile)
+        } else allowedTemplateIds
 
         val templates = effectiveIds.mapNotNull { id ->
             MissionTemplates.all.find { it.id == id }
@@ -125,6 +136,48 @@ class MissionGenerator @Inject constructor(
         }
 
         return missions
+    }
+
+    fun selectDailyTemplateIds(
+        profile: UserProfile,
+        baseTemplateIds: List<String>,
+        goalCategories: Set<MissionCategory>,
+        date: LocalDate,
+        recentTemplateIds: Set<String>,
+        focusThemeNames: Set<String> = emptySet(),
+        excludedTemplateIds: Set<String> = emptySet()
+    ): DailyTemplateSelection {
+        val baseTemplates = baseTemplateIds
+            .filterNot { it in excludedTemplateIds }
+            .mapNotNull { id -> MissionTemplates.all.find { it.id == id } }
+        if (baseTemplates.isEmpty()) {
+            return DailyTemplateSelection(emptyList(), emptyList())
+        }
+
+        val anchor = selectAnchorTemplate(baseTemplates)
+        val targetCategories = buildTargetCategories(baseTemplates, goalCategories, focusThemeNames)
+        val random = Random(date.toEpochDay() + profile.hunterName.hashCode().toLong())
+
+        val rotationPool = MissionTemplates.all
+            .filter { template ->
+                template.id != anchor.id &&
+                    template.id !in excludedTemplateIds &&
+                    template.category in targetCategories
+            }
+
+        val preferredPool = rotationPool.filter { it.id !in recentTemplateIds }
+        val rotating = pickRotatingTemplates(
+            preferredPool = preferredPool,
+            fallbackPool = rotationPool,
+            targetCount = 4,
+            random = random,
+            existingCategories = setOf(anchor.category)
+        )
+
+        return DailyTemplateSelection(
+            anchorIds = listOf(anchor.id),
+            rotatingIds = rotating.map { it.id }
+        )
     }
 
     /**
@@ -250,6 +303,72 @@ class MissionGenerator @Inject constructor(
             }
         }
         return existing
+    }
+
+    private fun selectAnchorTemplate(baseTemplates: List<MissionTemplate>): MissionTemplate {
+        val priorityCategories = listOf(
+            MissionCategory.PHYSICAL,
+            MissionCategory.PRODUCTIVITY,
+            MissionCategory.MENTAL,
+            MissionCategory.WELLNESS,
+            MissionCategory.SOCIAL,
+            MissionCategory.CREATIVITY
+        )
+
+        for (category in priorityCategories) {
+            val match = baseTemplates.firstOrNull { it.category == category }
+            if (match != null) return match
+        }
+
+        return baseTemplates.first()
+    }
+
+    private fun buildTargetCategories(
+        baseTemplates: List<MissionTemplate>,
+        goalCategories: Set<MissionCategory>,
+        focusThemeNames: Set<String>
+    ): Set<MissionCategory> {
+        val categories = goalCategories.ifEmpty { baseTemplates.map { it.category }.toSet() }.toMutableSet()
+        categories += MissionCategory.WELLNESS
+
+        for (themeName in focusThemeNames) {
+            val themeCategory = runCatching {
+                FocusTheme.valueOf(themeName).primaryCategory
+            }.getOrNull()
+            if (themeCategory != null) categories += themeCategory
+        }
+
+        return categories
+    }
+
+    private fun pickRotatingTemplates(
+        preferredPool: List<MissionTemplate>,
+        fallbackPool: List<MissionTemplate>,
+        targetCount: Int,
+        random: Random,
+        existingCategories: Set<MissionCategory>
+    ): List<MissionTemplate> {
+        val selected = mutableListOf<MissionTemplate>()
+        val usedCategories = existingCategories.toMutableSet()
+
+        fun shuffled(pool: List<MissionTemplate>): List<MissionTemplate> = pool.shuffled(random)
+
+        fun takeFrom(pool: List<MissionTemplate>, preferNewCategories: Boolean) {
+            for (candidate in shuffled(pool)) {
+                if (selected.size >= targetCount) return
+                if (selected.any { it.id == candidate.id }) continue
+                if (preferNewCategories && candidate.category in usedCategories) continue
+                selected += candidate
+                usedCategories += candidate.category
+            }
+        }
+
+        takeFrom(preferredPool, preferNewCategories = true)
+        takeFrom(preferredPool, preferNewCategories = false)
+        takeFrom(fallbackPool, preferNewCategories = true)
+        takeFrom(fallbackPool, preferNewCategories = false)
+
+        return selected.take(targetCount)
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

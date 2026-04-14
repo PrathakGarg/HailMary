@@ -77,6 +77,13 @@ fun HomeScreen(
                     )
                 }
 
+                state.previousDaySummary?.takeIf { summary ->
+                    !summary.wasRestDay && summary.totalMissions > 0
+                }?.let { summary ->
+                    Spacer(Modifier.height(12.dp))
+                    PreviousDaySummaryCard(summary)
+                }
+
                 Spacer(Modifier.height(20.dp))
 
                 // ── Time-almost-up warning ──────────────────────────────────
@@ -360,6 +367,42 @@ fun TimeRemainingWarning(minutesUntilReset: Long, modifier: Modifier = Modifier)
                 message,
                 style = AriseTypography.labelSmall.copy(color = accentColor, letterSpacing = 1.sp)
             )
+        }
+    }
+}
+
+@Composable
+fun PreviousDaySummaryCard(summary: PreviousDaySummary) {
+    val accentColor = when {
+        summary.hpLost > 0 || summary.xpLost > 0 -> CrimsonCore
+        summary.completionRate >= 0.8f -> EmeraldCore
+        else -> GoldCore
+    }
+    val completedEstimate = (summary.completionRate * summary.totalMissions).toInt()
+    val statusLine = buildString {
+        append("YESTERDAY: $completedEstimate/${summary.totalMissions} GATES CLEARED")
+        if (summary.hpLost > 0) append("  |  -${summary.hpLost} HP")
+        if (summary.xpLost > 0) append("  |  -${summary.xpLost} XP")
+        if (summary.hpLost == 0 && summary.xpLost == 0 && summary.completionRate < 1f) {
+            append("  |  WARNING ISSUED")
+        }
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(BackgroundCard)
+            .border(1.dp, accentColor.copy(alpha = 0.35f), RoundedCornerShape(12.dp))
+            .padding(14.dp)
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(
+                "[ DAILY RECKONING ]",
+                style = AriseTypography.labelSmall.copy(color = accentColor, letterSpacing = 3.sp, fontSize = 9.sp)
+            )
+            Text(statusLine, style = SystemTextStyle)
         }
     }
 }

@@ -24,6 +24,7 @@ data class SettingsUiState(
     val notificationHour: Int = 8,
     val dayStartMinutes: Int = 270,
     val activeFocusThemes: Set<FocusTheme> = setOf(FocusTheme.PHYSICAL_PERFORMANCE, FocusTheme.MENTAL_CLARITY),
+    val excludeInboxMissions: Boolean = true,
     val isSaved: Boolean = false
 )
 
@@ -45,8 +46,9 @@ class SettingsViewModel @Inject constructor(
                 userRepository.observeUserProfile(),
                 dataStore.notificationHour,
                 dataStore.dayStartMinutes,
-                dataStore.focusThemes
-            ) { profile, notifHour, dayStartMinutes, themeNames ->
+                dataStore.focusThemes,
+                dataStore.excludeInboxMissions
+            ) { profile, notifHour, dayStartMinutes, themeNames, excludeInboxMissions ->
                 val themes = themeNames.mapNotNull { name ->
                     FocusTheme.entries.find { it.name == name }
                 }.toSet().ifEmpty { setOf(FocusTheme.PHYSICAL_PERFORMANCE, FocusTheme.MENTAL_CLARITY) }
@@ -54,7 +56,8 @@ class SettingsViewModel @Inject constructor(
                     profile = profile,
                     notificationHour = notifHour,
                     dayStartMinutes = dayStartMinutes,
-                    activeFocusThemes = themes
+                    activeFocusThemes = themes,
+                    excludeInboxMissions = excludeInboxMissions
                 )
             }.collect { _uiState.value = it }
         }
@@ -119,6 +122,12 @@ class SettingsViewModel @Inject constructor(
                     )
                 )
             }
+        }
+    }
+
+    fun setExcludeInboxMissions(exclude: Boolean) {
+        viewModelScope.launch {
+            dataStore.setExcludeInboxMissions(exclude)
         }
     }
 }
