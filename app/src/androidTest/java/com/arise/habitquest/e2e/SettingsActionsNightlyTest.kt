@@ -234,6 +234,49 @@ class SettingsActionsNightlyTest {
         assertEquals(0, profile.consecutiveMissDays)
     }
 
+    /**
+     * Regression test for the rest-day race condition.
+     *
+     * Previously, [SettingsViewModel.setNotificationHour] read `_uiState.value.profile`
+     * (a snapshot that may be stale) and called `upsertProfile(...)` — a full row-replace
+     * that could overwrite the `rest_day` column with whatever value the snapshot held.
+     *
+     * The fix replaces the full upsert with a targeted `updateNotificationHour` SQL query,
+     * so the rest_day column is never touched by a notification-hour change.
+     *
+     * Sequence reproduced here:
+     *   1. Profile has restDay=3 (Thursday).
+     *   2. setRestDay(6) → pushes Sunday to DB (targeted updateRestDay).
+     *   3. Before the Flow propagates the new value back to `_uiState`, call
+     *      setNotificationHour(10) — this previously clobbered restDay back to 3.
+     *   4. Assert restDay is still 6 (Sunday) and notificationHour is 10.
+     */
+    @Test
+    fun setRestDay_thenChangeNotificationHour_doesNotClobberRestDay() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val sessionDate = LocalDate.of(2026, 4, 14)
+        E2ETestHarness.pinTrustedTime(LocalDateTime.of(2026, 4, 14, 9, 0), context = context)
+        seedSettingsProfile(context, sessionDate, restDay = 3)  // start with Thursday
+
+        val vm = buildSettingsViewModel(context)
+        waitForProfileLoaded(vm)
+
+        // Change rest day to Sunday (ordinal 6), then IMMEDIATELY change notification
+        // hour without waiting for the Flow to propagate the restDay update.
+        vm.setRestDay(6)
+        vm.setNotificationHour(10)   // used to overwrite restDay with stale value
+
+        // Both writes must complete without either one clobbering the other.
+        waitUntil(timeoutMs = 5_000) {
+            val p = E2ETestHarness.getUserProfileEntity(context) ?: return@waitUntil false
+            p.restDay == 6 && p.notificationHour == 10
+        }
+
+        val profile = requireNotNull(E2ETestHarness.getUserProfileEntity(context))
+        assertEquals("restDay must be Sunday (6), not clobbered by notification-hour change", 6, profile.restDay)
+        assertEquals("notificationHour must reflect the new value", 10, profile.notificationHour)
+    }
+
     private fun buildSettingsViewModel(context: Context): SettingsViewModel {
         val db = AppDatabase.getInstance(context)
         val dataStore = OnboardingDataStore(context)

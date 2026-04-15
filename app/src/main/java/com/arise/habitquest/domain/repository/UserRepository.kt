@@ -19,6 +19,8 @@ interface UserRepository {
     suspend fun updateAdaptiveDifficulty(difficulty: Float)
     suspend fun incrementDayCount()
     suspend fun updateMissState(consecutiveMissDays: Int, pendingWarning: Boolean)
+    suspend fun updateRestDay(restDay: Int)
+    suspend fun updateNotificationHour(hour: Int)
     /** Returns map of templateId → total completions from shadow records */
     suspend fun getShadowCompletions(templateIds: List<String>): Map<String, Int>
 }

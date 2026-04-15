@@ -52,6 +52,10 @@ class UserRepositoryImpl @Inject constructor(
     override suspend fun updateMissState(consecutiveMissDays: Int, pendingWarning: Boolean) =
         dao.updateMissState(consecutiveMissDays, pendingWarning)
 
+    override suspend fun updateRestDay(restDay: Int) = dao.updateRestDay(restDay)
+
+    override suspend fun updateNotificationHour(hour: Int) = dao.updateNotificationHour(hour)
+
     override suspend fun getShadowCompletions(templateIds: List<String>): Map<String, Int> {
         return templateIds.mapNotNull { id ->
             shadowDao.getShadow(id)?.let { id to it.totalCompletions }

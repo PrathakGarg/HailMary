@@ -85,8 +85,7 @@ class SettingsViewModel @Inject constructor(
 
     fun setRestDay(day: Int) {
         viewModelScope.launch {
-            val profile = _uiState.value.profile ?: return@launch
-            userRepository.upsertProfile(profile.copy(restDay = day))
+            userRepository.updateRestDay(day)
         }
     }
 
@@ -110,8 +109,7 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(notificationHour = hour) }
             dataStore.setNotificationHour(hour)
-            val profile = _uiState.value.profile ?: return@launch
-            userRepository.upsertProfile(profile.copy(notificationHour = hour))
+            userRepository.updateNotificationHour(hour)
             // Reschedule the morning worker so the new time takes effect immediately.
             MorningNotificationWorker.schedule(WorkManager.getInstance(context), timeProvider, hour)
         }

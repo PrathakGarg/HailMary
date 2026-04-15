@@ -423,6 +423,16 @@ class RollbackLedgerAndResetUseCaseTest {
             flow.value = profile
         }
 
+        override suspend fun updateRestDay(restDay: Int) {
+            profile = profile.copy(restDay = restDay)
+            flow.value = profile
+        }
+
+        override suspend fun updateNotificationHour(hour: Int) {
+            profile = profile.copy(notificationHour = hour)
+            flow.value = profile
+        }
+
         override suspend fun getShadowCompletions(templateIds: List<String>): Map<String, Int> = emptyMap()
     }
 }

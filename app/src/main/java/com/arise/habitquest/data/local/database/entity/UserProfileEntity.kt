@@ -37,7 +37,7 @@ data class UserProfileEntity(
     @ColumnInfo(name = "grace_uses_remaining") val graceUsesRemaining: Int = 3,
     @ColumnInfo(name = "adaptive_difficulty") val adaptiveDifficulty: Float = 1.0f,
 
-    @ColumnInfo(name = "rest_day") val restDay: Int = 0, // DayOfWeek ordinal (Sunday=0)
+    @ColumnInfo(name = "rest_day") val restDay: Int = 6, // ISO DayOfWeek ordinal: MONDAY=0 … SUNDAY=6
     @ColumnInfo(name = "notification_hour") val notificationHour: Int = 8,
     @ColumnInfo(name = "notification_evening_hour") val notificationEveningHour: Int = 20,
 

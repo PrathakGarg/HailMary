@@ -379,6 +379,8 @@ class AchievementTriggerValidationTest {
         override suspend fun updateAdaptiveDifficulty(difficulty: Float) = Unit
         override suspend fun incrementDayCount() = Unit
         override suspend fun updateMissState(consecutiveMissDays: Int, pendingWarning: Boolean) = Unit
+        override suspend fun updateRestDay(restDay: Int) = Unit
+        override suspend fun updateNotificationHour(hour: Int) = Unit
         override suspend fun getShadowCompletions(templateIds: List<String>): Map<String, Int> = emptyMap()
     }
 }
