@@ -297,7 +297,12 @@ class RegressionMatrixNightlyTest {
         val achievementRepository = AchievementRepositoryImpl(db.achievementDao(), AchievementMapper())
         val generator = MissionGenerator(timeProvider)
 
-        val unlockAchievement = UnlockAchievementUseCase(achievementRepository, userRepository)
+        val unlockAchievement = UnlockAchievementUseCase(
+            achievementRepository = achievementRepository,
+            userRepository = userRepository,
+            missionRepository = missionRepository,
+            timeProvider = timeProvider
+        )
         val checkLevelUp = CheckLevelUpUseCase(userRepository, generator, dataStore)
         val completeMission = CompleteMissionUseCase(
             missionRepository = missionRepository,

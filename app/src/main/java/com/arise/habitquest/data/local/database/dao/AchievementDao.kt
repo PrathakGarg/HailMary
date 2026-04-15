@@ -22,6 +22,9 @@ interface AchievementDao {
     @Query("UPDATE achievements SET unlocked_at = :unlockedAt WHERE id = :id")
     suspend fun unlockAchievement(id: String, unlockedAt: Long)
 
+    @Query("UPDATE achievements SET unlocked_at = NULL WHERE id = :id")
+    suspend fun relockAchievement(id: String)
+
     @Query("UPDATE achievements SET progress_current = :progress WHERE id = :id")
     suspend fun updateProgress(id: String, progress: Int)
 

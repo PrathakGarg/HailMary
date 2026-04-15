@@ -30,6 +30,9 @@ class AchievementRepositoryImpl @Inject constructor(
     override suspend fun unlockAchievement(id: String) =
         dao.unlockAchievement(id, Instant.now().toEpochMilli())
 
+    override suspend fun relockAchievement(id: String) =
+        dao.relockAchievement(id)
+
     override suspend fun updateProgress(id: String, progress: Int) =
         dao.updateProgress(id, progress)
 

@@ -40,6 +40,7 @@ class OnboardingDataStore @Inject constructor(
         val EXCLUDE_INBOX_MISSIONS = booleanPreferencesKey("exclude_inbox_missions")
         val DEPRIORITIZED_TEMPLATE_IDS = stringPreferencesKey("deprioritized_template_ids")
         val MISSION_ROLLBACK_LEDGER = stringPreferencesKey("mission_rollback_ledger")
+        val ACHIEVEMENT_REPAIR_V1_DONE = booleanPreferencesKey("achievement_repair_v1_done")
     }
 
     private val json = Json { ignoreUnknownKeys = true }
@@ -57,6 +58,9 @@ class OnboardingDataStore @Inject constructor(
 
     val notificationHour: Flow<Int> = context.dataStore.data
         .map { prefs -> prefs[Keys.NOTIFICATION_HOUR] ?: 8 }
+
+    val achievementRepairV1Done: Flow<Boolean> = context.dataStore.data
+        .map { prefs -> prefs[Keys.ACHIEVEMENT_REPAIR_V1_DONE] ?: false }
 
     suspend fun setOnboardingComplete(complete: Boolean) {
         context.dataStore.edit { prefs ->
@@ -79,6 +83,12 @@ class OnboardingDataStore @Inject constructor(
     suspend fun setNotificationHour(hour: Int) {
         context.dataStore.edit { prefs ->
             prefs[Keys.NOTIFICATION_HOUR] = hour
+        }
+    }
+
+    suspend fun setAchievementRepairV1Done(done: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.ACHIEVEMENT_REPAIR_V1_DONE] = done
         }
     }
 

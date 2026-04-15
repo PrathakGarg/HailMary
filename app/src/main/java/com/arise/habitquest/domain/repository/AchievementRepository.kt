@@ -10,6 +10,7 @@ interface AchievementRepository {
     suspend fun getAchievementsByTrigger(trigger: AchievementTrigger): List<Achievement>
     suspend fun insertAchievements(achievements: List<Achievement>)
     suspend fun unlockAchievement(id: String)
+    suspend fun relockAchievement(id: String)
     suspend fun updateProgress(id: String, progress: Int)
     suspend fun countUnlocked(): Int
 }
