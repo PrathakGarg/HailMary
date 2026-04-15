@@ -19,9 +19,7 @@ import androidx.glance.layout.*
 import androidx.glance.text.*
 import androidx.glance.unit.ColorProvider
 import com.arise.habitquest.MainActivity
-import com.arise.habitquest.data.local.database.AppDatabase
 import com.arise.habitquest.data.time.TimeProvider
-import kotlinx.coroutines.flow.first
 
 class AriseWidget : GlanceAppWidget() {
 
@@ -33,35 +31,17 @@ class AriseWidget : GlanceAppWidget() {
     )
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        // Fetch data directly from Room (widget runs outside Hilt scope)
-        val db = AppDatabase.getInstance(context)
-        val profile = db.userProfileDao().getUserProfile()
-        val todayMissions = try {
-            val today = TimeProvider.getInstance(context).sessionDay().toString()
-            db.missionDao().getMissionsForDate(today)
-        } catch (e: Exception) { emptyList() }
-
-        val hunterName = profile?.hunterName ?: "HUNTER"
-        val rank = profile?.rank ?: "E"
-        val hp = profile?.hp ?: 100
-        val maxHp = profile?.maxHp ?: 100
-        val xp = profile?.xp ?: 0L
-        val xpToNext = profile?.xpToNextLevel ?: 100L
-        val streak = profile?.streakCurrent ?: 0
-        val completedToday = todayMissions.count { it.isCompleted }
-        val totalToday = todayMissions.size
-        val hpFraction = if (maxHp > 0) hp.toFloat() / maxHp else 0f
-        val xpFraction = if (xpToNext > 0) xp.toFloat() / xpToNext else 0f
+        val data = WidgetDataProvider.load(context)
 
         provideContent {
             AriseWidgetContent(
-                hunterName = hunterName,
-                rank = rank,
-                hp = hp, maxHp = maxHp, hpFraction = hpFraction,
-                xpFraction = xpFraction,
-                streak = streak,
-                completedToday = completedToday,
-                totalToday = totalToday
+                hunterName = data.hunterName,
+                rank = data.rank,
+                hp = data.hp, maxHp = data.maxHp, hpFraction = data.hpFraction,
+                xpFraction = data.xpFraction,
+                streak = data.streak,
+                completedToday = data.completedToday,
+                totalToday = data.totalToday
             )
         }
     }
@@ -372,16 +352,9 @@ suspend fun refreshAriseWidget(context: Context) {
     AriseWidget().updateAll(context)
 }
 
-/** Maps a rank name string to its ARGB long — mirrors rankColor() in RankBadge.kt. */
-private fun widgetRankColor(rank: String): Long = when (rank) {
-    "E"       -> 0xFF9CA3AFL  // Grey
-    "D"       -> 0xFF10B981L  // Emerald
-    "C"       -> 0xFF3B82F6L  // Blue
-    "B"       -> 0xFF8B5CF6L  // Violet
-    "A"       -> 0xFFF59E0BL  // Gold
-    "S"       -> 0xFFEF4444L  // Crimson
-    "SS"      -> 0xFFEC4899L  // Pink
-    "SSS"     -> 0xFFF97316L  // Orange
-    "MONARCH" -> 0xFFEAB308L  // Bright gold
-    else      -> 0xFF9CA3AFL  // fallback grey
+/** Maps a rank name string to its ARGB long — delegates to the canonical rankColor(). */
+private fun widgetRankColor(rank: String): Long {
+    val r = com.arise.habitquest.domain.model.Rank.entries.find { it.name == rank }
+        ?: com.arise.habitquest.domain.model.Rank.E
+    return com.arise.habitquest.ui.components.rankColor(r).value.toLong()
 }

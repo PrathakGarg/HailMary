@@ -18,6 +18,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.arise.habitquest.data.generator.MissionTemplates
 import com.arise.habitquest.domain.model.FocusTheme
+import com.arise.habitquest.ui.components.AriseTopBar
 import com.arise.habitquest.ui.components.glowEffect
 import com.arise.habitquest.ui.theme.*
 import java.time.DayOfWeek
@@ -36,21 +37,7 @@ fun SettingsScreen(
 
     Scaffold(
         containerColor = BackgroundDeep,
-        topBar = {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(BackgroundSurface)
-                    .padding(top = 44.dp, start = 8.dp, end = 16.dp, bottom = 8.dp)
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Filled.ArrowBack, "Back", tint = TextSecondary)
-                    }
-                    Text("SETTINGS", style = AriseTypography.headlineSmall.copy(letterSpacing = 3.sp))
-                }
-            }
-        }
+        topBar = { AriseTopBar(title = "SETTINGS", onBack = onBack) }
     ) { padding ->
         Column(
             modifier = Modifier
@@ -238,7 +225,7 @@ fun SettingsScreen(
                     enabled = canUse,
                     colors = ButtonDefaults.buttonColors(
                         containerColor = GoldCore,
-                        contentColor = androidx.compose.ui.graphics.Color(0xFF0A0A0F),
+                        contentColor = BackgroundDeep,
                         disabledContainerColor = BackgroundElevated,
                         disabledContentColor = TextDim
                     ),

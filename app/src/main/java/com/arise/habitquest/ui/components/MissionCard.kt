@@ -25,8 +25,8 @@ import com.arise.habitquest.domain.model.*
 import com.arise.habitquest.ui.theme.*
 
 // Crimson used for System Mandate badge — distinct from category colours
-private val MandateBadgeColor = Color(0xFFEF4444)
-private val MandateBorderColor = Color(0xFF7C3AED)  // System purple
+private val MandateBadgeColor = CrimsonCore
+private val MandateBorderColor = PurpleCore
 
 @Composable
 fun MissionCard(
@@ -265,17 +265,21 @@ fun MissionCard(
                                     modifier = Modifier.size(24.dp)
                                 )
                                 if (onReset != null) {
-                                    IconButton(
-                                        onClick = onReset,
+                                    Box(
                                         modifier = Modifier
                                             .size(32.dp)
+                                            .clip(CircleShape)
+                                            .clickable(onClick = onReset)
+                                            .background(PurpleFaint)
                                             .testTag("mission_reset_${mission.id}")
                                     ) {
                                         Icon(
                                             Icons.Filled.Restore,
                                             contentDescription = "Reset mission",
                                             tint = TextSecondary,
-                                            modifier = Modifier.size(18.dp)
+                                            modifier = Modifier
+                                                .size(18.dp)
+                                                .align(Alignment.Center)
                                         )
                                     }
                                 }
@@ -293,17 +297,21 @@ fun MissionCard(
                                     modifier = Modifier.size(24.dp)
                                 )
                                 if (onReset != null) {
-                                    IconButton(
-                                        onClick = onReset,
+                                    Box(
                                         modifier = Modifier
                                             .size(32.dp)
+                                            .clip(CircleShape)
+                                            .clickable(onClick = onReset)
+                                            .background(PurpleFaint)
                                             .testTag("mission_reset_${mission.id}")
                                     ) {
                                         Icon(
                                             Icons.Filled.Restore,
                                             contentDescription = "Reset mission",
                                             tint = TextSecondary,
-                                            modifier = Modifier.size(18.dp)
+                                            modifier = Modifier
+                                                .size(18.dp)
+                                                .align(Alignment.Center)
                                         )
                                     }
                                 }
@@ -335,13 +343,13 @@ fun MissionCard(
 }
 
 fun difficultyColor(difficulty: Difficulty): Color = when (difficulty) {
-    Difficulty.F -> Color(0xFF9CA3AF)
-    Difficulty.E -> Color(0xFF10B981)
-    Difficulty.D -> Color(0xFF3B82F6)
-    Difficulty.C -> Color(0xFF8B5CF6)
-    Difficulty.B -> Color(0xFFF59E0B)
-    Difficulty.A -> Color(0xFFEF4444)
-    Difficulty.S -> Color(0xFFEC4899)
+    Difficulty.F -> RankColorE
+    Difficulty.E -> EmeraldCore
+    Difficulty.D -> BlueCore
+    Difficulty.C -> StatSenseColor
+    Difficulty.B -> GoldCore
+    Difficulty.A -> CrimsonCore
+    Difficulty.S -> RankColorSS
 }
 
 fun categoryColor(category: MissionCategory): Color = when (category) {

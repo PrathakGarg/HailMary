@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.arise.habitquest.domain.model.MissionCategory
+import com.arise.habitquest.ui.components.AriseTopBar
 import com.arise.habitquest.ui.components.CategoryRadarChart
 import com.arise.habitquest.ui.components.CategoryStats
 import com.arise.habitquest.ui.theme.*
@@ -37,21 +38,7 @@ fun HistoryScreen(
 
     Scaffold(
         containerColor = BackgroundDeep,
-        topBar = {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(BackgroundSurface)
-                    .padding(top = 44.dp, start = 8.dp, end = 16.dp, bottom = 8.dp)
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Filled.ArrowBack, "Back", tint = TextSecondary)
-                    }
-                    Text("BATTLE RECORD", style = AriseTypography.headlineSmall.copy(letterSpacing = 3.sp))
-                }
-            }
-        }
+        topBar = { AriseTopBar(title = "BATTLE RECORD", onBack = onBack) }
     ) { padding ->
         if (state.isLoading) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {

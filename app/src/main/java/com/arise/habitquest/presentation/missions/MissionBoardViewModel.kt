@@ -30,7 +30,7 @@ data class MissionBoardUiState(
 class MissionBoardViewModel @Inject constructor(
     private val missionRepository: MissionRepository,
     private val userRepository: UserRepository,
-    private val resetMissionOutcome: ResetMissionOutcomeUseCase,
+    private val resetMissionOutcomeUseCase: ResetMissionOutcomeUseCase,
     private val timeProvider: TimeProvider
 ) : ViewModel() {
 
@@ -84,7 +84,7 @@ class MissionBoardViewModel @Inject constructor(
 
     fun resetMissionOutcome(missionId: String) {
         viewModelScope.launch {
-            resetMissionOutcome(missionId)
+            resetMissionOutcomeUseCase(missionId)
         }
     }
 }

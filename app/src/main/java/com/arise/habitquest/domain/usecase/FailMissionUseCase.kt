@@ -1,11 +1,11 @@
 package com.arise.habitquest.domain.usecase
 
 import com.arise.habitquest.data.local.datastore.OnboardingDataStore
-import com.arise.habitquest.domain.model.MissionRollbackEntry
 import com.arise.habitquest.domain.model.Mission
 import com.arise.habitquest.domain.model.UserProfile
 import com.arise.habitquest.domain.repository.MissionRepository
 import com.arise.habitquest.domain.repository.UserRepository
+import com.arise.habitquest.domain.usecase.policy.MissionPenaltyPolicy
 import javax.inject.Inject
 
 data class FailResult(
@@ -35,12 +35,8 @@ class FailMissionUseCase @Inject constructor(
             hpDeducted = 0
             userRepository.updateMissState(newMissDays, true)
         } else {
-            // Day 2+ consecutive miss: apply penalties.
-            // System Mandates (cross-category growth missions) carry softer consequences —
-            // the System won't brutally punish hunters for struggling outside their expertise,
-            // but there are still consequences for ignoring the directive.
-            val xpPenalty = if (mission.isSystemMandate) mission.penaltyXp / 2 else mission.penaltyXp
-            val hpPenalty = if (mission.isSystemMandate) 0 else mission.penaltyHp
+            val xpPenalty = MissionPenaltyPolicy.systemMandateXpPenalty(mission)
+            val hpPenalty = MissionPenaltyPolicy.systemMandateHpPenalty(mission)
 
             xpDeducted = xpPenalty
             hpDeducted = hpPenalty
@@ -60,19 +56,7 @@ class FailMissionUseCase @Inject constructor(
 
         dataStore.setMissionRollbackEntry(
             mission.id,
-            MissionRollbackEntry(
-                recordedAtMillis = System.currentTimeMillis(),
-                xpDelta = -xpDeducted.toLong(),
-                hpDelta = -hpDeducted,
-                strDelta = 0,
-                agiDelta = 0,
-                intDelta = 0,
-                vitDelta = 0,
-                endDelta = 0,
-                senseDelta = 0,
-                missionCountDelta = 0,
-                totalXpEarnedDelta = 0L
-            )
+            MissionPenaltyPolicy.buildFailureRollback(xpDeducted, hpDeducted)
         )
 
         return FailResult(

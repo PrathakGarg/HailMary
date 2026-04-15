@@ -15,7 +15,7 @@ import com.arise.habitquest.domain.model.MissionCategory
 import com.arise.habitquest.ui.theme.AriseTypography
 import androidx.compose.material3.Text
 import androidx.compose.ui.unit.sp
-import com.arise.habitquest.ui.theme.TextDim
+import com.arise.habitquest.ui.theme.*
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -48,12 +48,12 @@ data class CategoryStats(
 
 val radarCategoryLabels = listOf("BODY", "MIND", "WORK", "SOCIAL", "WELL", "CREATE")
 val radarCategoryColors = listOf(
-    Color(0xFFEF4444), // PHYSICAL
-    Color(0xFF3B82F6), // MENTAL
-    Color(0xFF10B981), // PRODUCTIVITY
-    Color(0xFF8B5CF6), // SOCIAL
-    Color(0xFFF59E0B), // WELLNESS
-    Color(0xFFEC4899)  // CREATIVITY
+    CrimsonCore,      // PHYSICAL
+    BlueCore,         // MENTAL
+    EmeraldCore,      // PRODUCTIVITY
+    StatSenseColor,   // SOCIAL
+    GoldCore,         // WELLNESS
+    RankColorSS       // CREATIVITY
 )
 
 // ── Composable ────────────────────────────────────────────────────────────────
@@ -66,10 +66,10 @@ fun CategoryRadarChart(
     val ordered = MissionCategory.entries.map { cat -> stats.find { it.category == cat } }
     val scores  = ordered.map { it?.masteryScore ?: 0f }
 
-    val gridColor   = Color(0xFF2D2D4E)
-    val fillColor   = Color(0x447C3AED)
-    val strokeColor = Color(0xFF7C3AED)
-    val labelColor  = Color(0xFF94A3B8)
+    val gridColor   = ChartGrid
+    val fillColor   = PurpleCore.copy(alpha = 0.27f)
+    val strokeColor = PurpleCore
+    val labelColor  = TextSecondary
 
     Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
         Box(contentAlignment = Alignment.Center) {

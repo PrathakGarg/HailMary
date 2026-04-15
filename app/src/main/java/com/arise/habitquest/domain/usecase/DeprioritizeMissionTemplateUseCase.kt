@@ -7,6 +7,7 @@ import com.arise.habitquest.data.time.TimeProvider
 import com.arise.habitquest.domain.model.MissionType
 import com.arise.habitquest.domain.repository.MissionRepository
 import com.arise.habitquest.domain.repository.UserRepository
+import com.arise.habitquest.domain.usecase.policy.MissionExclusions
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 import kotlin.random.Random
@@ -18,8 +19,6 @@ class DeprioritizeMissionTemplateUseCase @Inject constructor(
     private val generator: MissionGenerator,
     private val timeProvider: TimeProvider
 ) {
-    private val inboxMissionTemplateIds = setOf("tpl_inbox_zero", "tpl_two_minute_sweep")
-
     suspend operator fun invoke(missionId: String): Boolean {
         val sessionDate = timeProvider.sessionDay()
         val mission = missionRepository.getMissionById(missionId) ?: return false
@@ -36,7 +35,7 @@ class DeprioritizeMissionTemplateUseCase @Inject constructor(
         dataStore.setDeprioritizedTemplateIds(updatedDeprioritized)
 
         val excludedTemplateIds = updatedDeprioritized +
-            if (dataStore.excludeInboxMissions.first()) inboxMissionTemplateIds else emptySet()
+            if (dataStore.excludeInboxMissions.first()) MissionExclusions.INBOX_TEMPLATE_IDS else emptySet()
 
         val todayMissions = missionRepository.getMissionsForDate(sessionDate)
         val todayTemplateIds = todayMissions.mapNotNull { it.parentTemplateId }.toSet() + templateId

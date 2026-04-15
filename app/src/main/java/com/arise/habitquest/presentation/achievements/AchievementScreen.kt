@@ -24,6 +24,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.arise.habitquest.domain.model.Achievement
 import com.arise.habitquest.domain.model.Rarity
+import com.arise.habitquest.ui.components.AriseTopBar
 import com.arise.habitquest.ui.components.glowEffect
 import com.arise.habitquest.ui.theme.*
 import java.time.Instant
@@ -42,25 +43,16 @@ fun AchievementScreen(
     Scaffold(
         containerColor = BackgroundDeep,
         topBar = {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(BackgroundSurface)
-                    .padding(top = 44.dp, start = 16.dp, end = 16.dp, bottom = 8.dp)
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("ACHIEVEMENTS", style = AriseTypography.headlineSmall.copy(letterSpacing = 3.sp))
+            AriseTopBar(
+                title = "ACHIEVEMENTS",
+                trailingContent = {
                     Text(
                         "${state.unlockedCount}/${state.totalCount}",
                         style = AriseTypography.labelMedium.copy(color = GoldCore),
                         modifier = Modifier.testTag("achievement_summary")
                     )
                 }
-            }
+            )
         }
     ) { padding ->
         Column(
@@ -358,9 +350,9 @@ fun AchievementCard(
 }
 
 fun rarityColor(rarity: Rarity): Color = when (rarity) {
-    Rarity.COMMON -> Color(0xFF9CA3AF)
-    Rarity.RARE -> Color(0xFF3B82F6)
-    Rarity.EPIC -> Color(0xFF8B5CF6)
-    Rarity.LEGENDARY -> Color(0xFFF59E0B)
-    Rarity.MYTHIC -> Color(0xFFEC4899)
+    Rarity.COMMON -> RankColorE
+    Rarity.RARE -> BlueCore
+    Rarity.EPIC -> StatSenseColor
+    Rarity.LEGENDARY -> GoldCore
+    Rarity.MYTHIC -> RankColorSS
 }

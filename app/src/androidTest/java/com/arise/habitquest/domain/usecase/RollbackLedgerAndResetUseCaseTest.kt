@@ -243,6 +243,31 @@ class RollbackLedgerAndResetUseCaseTest {
         assertTrue(ledger.size <= 500)
     }
 
+    @Test
+    fun resetCompletedMissionWithoutLedgerEntry_doesNotCrash_andResetsMission() = runBlocking {
+        val profile = UserProfile(
+            xp = 18,
+            hp = 95,
+            maxHp = 100,
+            stats = HunterStats(str = 6, agi = 5, int = 5, vit = 5, end = 5, sense = 5),
+            totalMissionsCompleted = 1,
+            totalXpEarned = 8
+        )
+        val completedLegacy = mission(id = "m_legacy", isCompleted = true, xpReward = 8, statStr = 1)
+
+        val missionRepo = FakeMissionRepository(listOf(completedLegacy))
+        val userRepo = FakeUserRepository(profile)
+        val useCase = ResetMissionOutcomeUseCase(missionRepo, userRepo, dataStore)
+
+        // No rollback entry intentionally: mission completed before ledger feature existed.
+        val reset = useCase("m_legacy")
+        assertTrue(reset)
+
+        val missionAfter = missionRepo.getMissionById("m_legacy")
+        assertTrue(missionAfter != null)
+        assertTrue(missionAfter?.isActive == true)
+    }
+
     private fun mission(
         id: String,
         isCompleted: Boolean = false,

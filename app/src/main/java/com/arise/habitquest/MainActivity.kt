@@ -17,13 +17,7 @@ import com.arise.habitquest.data.time.TimeProvider
 import com.arise.habitquest.domain.repository.UserRepository
 import com.arise.habitquest.presentation.navigation.AriseNavHost
 import com.arise.habitquest.ui.theme.AriseTheme
-import com.arise.habitquest.worker.DailyResetWorker
-import com.arise.habitquest.worker.EveningReminderWorker
-import com.arise.habitquest.worker.MidDayCheckWorker
-import com.arise.habitquest.worker.MonthlyReportWorker
-import com.arise.habitquest.worker.MorningNotificationWorker
-import com.arise.habitquest.worker.PreResetReminderWorker
-import com.arise.habitquest.worker.WindDownWorker
+import com.arise.habitquest.worker.WorkerScheduler
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -78,13 +72,7 @@ class MainActivity : ComponentActivity() {
         val wm = WorkManager.getInstance(this)
         lifecycleScope.launch {
             val notifHour = userRepository.getUserProfile()?.notificationHour ?: 8
-            DailyResetWorker.schedule(wm, timeProvider)
-            MorningNotificationWorker.schedule(wm, notifHour)
-            PreResetReminderWorker.schedule(wm, timeProvider)
-            MidDayCheckWorker.schedule(wm)
-            EveningReminderWorker.schedule(wm)
-            WindDownWorker.schedule(wm)
-            MonthlyReportWorker.schedule(wm)
+            WorkerScheduler.scheduleAll(wm, timeProvider, notifHour)
         }
     }
 }

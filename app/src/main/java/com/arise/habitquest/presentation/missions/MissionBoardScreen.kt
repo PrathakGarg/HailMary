@@ -31,7 +31,6 @@ import com.arise.habitquest.ui.theme.*
 @Composable
 fun MissionBoardScreen(
     onMissionClick: (String) -> Unit,
-    onBack: () -> Unit = {},
     bottomBarPadding: androidx.compose.foundation.layout.PaddingValues = androidx.compose.foundation.layout.PaddingValues(),
     viewModel: MissionBoardViewModel = hiltViewModel()
 ) {
@@ -52,19 +51,7 @@ fun MissionBoardScreen(
 
     Scaffold(
         containerColor = BackgroundDeep,
-        topBar = {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(BackgroundSurface)
-                    .padding(top = 44.dp, bottom = 8.dp, start = 16.dp, end = 16.dp)
-            ) {
-                Text(
-                    "MISSION BOARD",
-                    style = AriseTypography.headlineSmall.copy(letterSpacing = 3.sp)
-                )
-            }
-        }
+        topBar = { AriseTopBar(title = "MISSION BOARD") }
     ) { padding ->
         Column(
             modifier = Modifier
@@ -189,13 +176,4 @@ private fun MissionListPage(
             }
         }
     }
-}
-
-@Composable
-fun SectionLabel(label: String) {
-    Text(
-        label,
-        style = AriseTypography.labelSmall.copy(color = TextDim, letterSpacing = 2.sp),
-        modifier = Modifier.padding(vertical = 4.dp)
-    )
 }

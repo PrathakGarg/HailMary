@@ -1,16 +1,9 @@
 package com.arise.habitquest.worker
 
-import android.app.NotificationChannel
 import android.app.NotificationManager
-import android.app.PendingIntent
 import android.content.Context
-import android.content.Intent
-import android.os.Build
-import androidx.core.app.NotificationCompat
 import androidx.hilt.work.HiltWorker
 import androidx.work.*
-import com.arise.habitquest.MainActivity
-import com.arise.habitquest.R
 import com.arise.habitquest.data.local.datastore.OnboardingDataStore
 import com.arise.habitquest.data.time.TimeProvider
 import com.arise.habitquest.domain.repository.MissionRepository
@@ -18,7 +11,6 @@ import com.arise.habitquest.domain.repository.UserRepository
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.flow.first
-import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.concurrent.TimeUnit
 
@@ -96,36 +88,16 @@ class MonthlyReportWorker @AssistedInject constructor(
     }
 
     private fun sendNotification(title: String, body: String) {
-        val manager = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        val channelId = "arise_monthly_report"
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                channelId,
-                "Monthly System Report",
-                NotificationManager.IMPORTANCE_DEFAULT
-            ).apply { description = "Monthly performance recap from the System." }
-            manager.createNotificationChannel(channel)
-        }
-
-        val intent = Intent(applicationContext, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-        }
-        val pendingIntent = PendingIntent.getActivity(
-            applicationContext, 0, intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        NotificationHelper.send(
+            context = applicationContext,
+            channelId = "arise_monthly_report",
+            channelName = "Monthly System Report",
+            channelDescription = "Monthly performance recap from the System.",
+            importance = NotificationManager.IMPORTANCE_DEFAULT,
+            notificationId = NOTIFICATION_ID,
+            title = title,
+            body = body
         )
-
-        val notification = NotificationCompat.Builder(applicationContext, channelId)
-            .setSmallIcon(R.drawable.ic_arise_logo)
-            .setContentTitle(title)
-            .setStyle(NotificationCompat.BigTextStyle().bigText(body))
-            .setContentText(body)
-            .setContentIntent(pendingIntent)
-            .setAutoCancel(true)
-            .build()
-
-        manager.notify(NOTIFICATION_ID, notification)
     }
 
     companion object {

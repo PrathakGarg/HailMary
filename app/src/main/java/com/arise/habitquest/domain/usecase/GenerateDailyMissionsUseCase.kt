@@ -2,16 +2,12 @@ package com.arise.habitquest.domain.usecase
 
 import com.arise.habitquest.data.generator.MissionGenerator
 import com.arise.habitquest.data.local.datastore.OnboardingDataStore
-import com.arise.habitquest.domain.model.Goal
-import com.arise.habitquest.domain.model.MissionCategory
+import com.arise.habitquest.domain.model.OnboardingConfigCodec
 import com.arise.habitquest.domain.model.UserProfile
 import com.arise.habitquest.domain.repository.MissionRepository
 import com.arise.habitquest.domain.repository.UserRepository
+import com.arise.habitquest.domain.usecase.policy.MissionExclusions
 import kotlinx.coroutines.flow.first
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 import java.time.LocalDate
 import javax.inject.Inject
 
@@ -21,12 +17,10 @@ class GenerateDailyMissionsUseCase @Inject constructor(
     private val generator: MissionGenerator,
     private val dataStore: OnboardingDataStore
 ) {
-    private val inboxMissionTemplateIds = setOf("tpl_inbox_zero", "tpl_two_minute_sweep")
-
     suspend operator fun invoke(profile: UserProfile, date: LocalDate) {
         dataStore.pruneMissionRollbackLedger()
 
-        val onboardingConfig = parseOnboardingConfig(profile)
+        val onboardingConfig = OnboardingConfigCodec.decode(profile.onboardingAnswersJson)
         val baseTemplateIds = onboardingConfig.templateIds
         if (baseTemplateIds.isEmpty()) return
 
@@ -38,7 +32,7 @@ class GenerateDailyMissionsUseCase @Inject constructor(
         val focusThemes = dataStore.focusThemes.first()
         val deprioritizedTemplateIds = dataStore.deprioritizedTemplateIds.first()
         val excludedTemplateIds = (if (dataStore.excludeInboxMissions.first()) {
-            inboxMissionTemplateIds
+            MissionExclusions.INBOX_TEMPLATE_IDS
         } else {
             emptySet()
         }) + deprioritizedTemplateIds
@@ -70,29 +64,5 @@ class GenerateDailyMissionsUseCase @Inject constructor(
             excludedTemplateIds = excludedTemplateIds
         )
         missionRepository.insertMissions(missions)
-    }
-
-    private data class OnboardingConfig(
-        val templateIds: List<String>,
-        val goalCategories: Set<MissionCategory>
-    )
-
-    private fun parseOnboardingConfig(profile: UserProfile): OnboardingConfig {
-        return try {
-            val json = Json.parseToJsonElement(profile.onboardingAnswersJson)
-            val jsonObject = json.jsonObject
-            val templateIds = (jsonObject["templateIds"] as? JsonArray)
-                ?.map { it.jsonPrimitive.content }
-                .orEmpty()
-            val goalCategories = (jsonObject["goals"] as? JsonArray)
-                ?.mapNotNull { goalName ->
-                    runCatching { Goal.valueOf(goalName.jsonPrimitive.content).primaryCategory }.getOrNull()
-                }
-                ?.toSet()
-                .orEmpty()
-            OnboardingConfig(templateIds = templateIds, goalCategories = goalCategories)
-        } catch (e: Exception) {
-            OnboardingConfig(emptyList(), emptySet())
-        }
     }
 }

@@ -70,8 +70,8 @@ data class UserProfile(
     val pendingWarning: Boolean = false,
     val consecutiveMissDays: Int = 0
 ) {
-    val hpPercent: Float get() = if (maxHp > 0) hp.toFloat() / maxHp else 0f
-    val xpPercent: Float get() = if (xpToNextLevel > 0) xp.toFloat() / xpToNextLevel else 0f
+    val hpPercent: Float get() = progressPercent(hp, maxHp)
+    val xpPercent: Float get() = progressPercent(xp, xpToNextLevel)
     val isAtRisk: Boolean get() = hp <= maxHp * 0.25f
     val isInPenaltyZone: Boolean get() = hp <= 0
 }

@@ -58,6 +58,9 @@ val RankColorSS = Color(0xFFEC4899)   // Pink
 val RankColorSSS = Color(0xFFF97316)  // Orange
 val RankColorMonarch = Color(0xFFEAB308) // Bright gold
 
+// ── Chart ─────────────────────────────────────────────────────────────────────
+val ChartGrid = Color(0xFF2D2D4E)
+
 // ── Borders / dividers ────────────────────────────────────────────────────────
 val BorderDefault = Color(0xFF1E1E3A)
 val BorderAccent = Color(0xFF3B2D7A)

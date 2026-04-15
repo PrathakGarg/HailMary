@@ -27,7 +27,8 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -108,29 +109,22 @@ dependencies {
     // WorkManager
     implementation(libs.workmanager.ktx)
 
-    // Lottie
-    implementation(libs.lottie.compose)
-
     // Coroutines
     implementation(libs.coroutines.android)
 
     // Serialization
     implementation(libs.kotlin.serialization.json)
 
-    // Lifecycle ViewModel
-    implementation(libs.lifecycle.viewmodel.compose)
-
     // Glance Widget
     implementation(libs.glance.appwidget)
-    implementation(libs.glance.material3)
 
     // Instrumented tests
-    androidTestImplementation("androidx.test.ext:junit:1.1.5")
-    androidTestImplementation("androidx.test:runner:1.5.2")
-    androidTestImplementation("androidx.test:rules:1.5.0")
-    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
-    androidTestImplementation("androidx.test.uiautomator:uiautomator:2.3.0")
-    androidTestImplementation("androidx.work:work-testing:2.9.0")
+    androidTestImplementation(libs.androidx.test.ext.junit)
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.test.rules)
+    androidTestImplementation(libs.androidx.compose.ui.test.junit4)
+    androidTestImplementation(libs.uiautomator)
+    androidTestImplementation(libs.workmanager.testing)
 }
 
 fun resolveAdbExecutable(): String {

@@ -58,6 +58,7 @@ object E2ESelectors {
     fun onboardingPhase(index: Int): String = "onboarding_phase_$index"
     fun missionCard(id: String): String = "mission_card_$id"
     fun missionQuickComplete(id: String): String = "mission_quick_complete_$id"
+    fun missionReset(id: String): String = "mission_reset_$id"
     fun missionStatusCompleted(id: String): String = "mission_status_completed_$id"
     fun missionStatusFailed(id: String): String = "mission_status_failed_$id"
     fun missionsTab(index: Int): String = "missions_tab_$index"

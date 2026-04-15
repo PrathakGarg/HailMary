@@ -1,13 +1,13 @@
 package com.arise.habitquest.domain.usecase
 
 import com.arise.habitquest.domain.model.Achievement
-import com.arise.habitquest.domain.model.MissionRollbackEntry
 import com.arise.habitquest.domain.model.Mission
 import com.arise.habitquest.domain.model.UserProfile
 import com.arise.habitquest.data.local.datastore.OnboardingDataStore
 import com.arise.habitquest.data.time.TimeProvider
 import com.arise.habitquest.domain.repository.MissionRepository
 import com.arise.habitquest.domain.repository.UserRepository
+import com.arise.habitquest.domain.usecase.policy.MissionPenaltyPolicy
 import javax.inject.Inject
 
 data class CompletionResult(
@@ -86,19 +86,7 @@ class CompleteMissionUseCase @Inject constructor(
 
         dataStore.setMissionRollbackEntry(
             mission.id,
-            MissionRollbackEntry(
-                recordedAtMillis = System.currentTimeMillis(),
-                xpDelta = effectiveXp.toLong(),
-                hpDelta = hpRestored,
-                strDelta = mission.statRewards[com.arise.habitquest.domain.model.Stat.STR] ?: 0,
-                agiDelta = mission.statRewards[com.arise.habitquest.domain.model.Stat.AGI] ?: 0,
-                intDelta = mission.statRewards[com.arise.habitquest.domain.model.Stat.INT] ?: 0,
-                vitDelta = mission.statRewards[com.arise.habitquest.domain.model.Stat.VIT] ?: 0,
-                endDelta = mission.statRewards[com.arise.habitquest.domain.model.Stat.END] ?: 0,
-                senseDelta = mission.statRewards[com.arise.habitquest.domain.model.Stat.SENSE] ?: 0,
-                missionCountDelta = 1,
-                totalXpEarnedDelta = effectiveXp.toLong()
-            )
+            MissionPenaltyPolicy.buildCompletionRollback(mission, effectiveXp, hpRestored)
         )
 
         return CompletionResult(

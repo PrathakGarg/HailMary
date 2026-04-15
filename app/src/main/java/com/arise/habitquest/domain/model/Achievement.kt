@@ -48,5 +48,5 @@ data class Achievement(
     val triggerThreshold: Int = 1
 ) {
     val isUnlocked: Boolean get() = unlockedAt != null
-    val progressPercent: Float get() = if (progressTarget > 0) progressCurrent.toFloat() / progressTarget else 0f
+    val progressPercent: Float get() = progressPercent(progressCurrent, progressTarget)
 }

@@ -25,9 +25,6 @@ interface ShadowDao {
     @Query("UPDATE shadows SET current_streak = :streak, best_streak = :best, total_completions = total_completions + 1, last_completed_date = :date WHERE template_id = :id")
     suspend fun recordCompletion(id: String, streak: Int, best: Int, date: String)
 
-    @Query("UPDATE shadows SET is_shadow = 1 WHERE template_id = :id")
-    suspend fun promotToShadow(id: String)
-
     @Query("UPDATE shadows SET current_streak = 0 WHERE template_id = :id")
     suspend fun resetStreak(id: String)
 }

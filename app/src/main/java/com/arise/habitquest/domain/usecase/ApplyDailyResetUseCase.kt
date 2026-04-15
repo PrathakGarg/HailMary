@@ -7,9 +7,8 @@ import com.arise.habitquest.data.local.datastore.OnboardingDataStore
 import com.arise.habitquest.data.time.TimeProvider
 import com.arise.habitquest.domain.repository.MissionRepository
 import com.arise.habitquest.domain.repository.UserRepository
-import kotlinx.coroutines.flow.first
-import java.time.DayOfWeek
-import java.time.LocalDate
+import com.arise.habitquest.domain.usecase.policy.MissionPenaltyPolicy
+import com.arise.habitquest.domain.usecase.policy.RestDayPolicy
 import javax.inject.Inject
 
 class ApplyDailyResetUseCase @Inject constructor(
@@ -25,8 +24,8 @@ class ApplyDailyResetUseCase @Inject constructor(
         val profile = userRepository.getUserProfile() ?: return
         val sessionDate = timeProvider.sessionDay()
         val expiringDate = sessionDate.minusDays(1)
-        val currentSessionIsRestDay = sessionDate.dayOfWeek == DayOfWeek.of(((profile.restDay % 7) + 1).coerceIn(1, 7))
-        val expiringWasRestDay = expiringDate.dayOfWeek == DayOfWeek.of(((profile.restDay % 7) + 1).coerceIn(1, 7))
+        val currentSessionIsRestDay = RestDayPolicy.isRestDay(sessionDate, profile.restDay)
+        val expiringWasRestDay = RestDayPolicy.isRestDay(expiringDate, profile.restDay)
 
         // Any active daily gate from the expiring session date becomes failed at rollover.
         missionRepository.failActiveDailyMissionsForDate(expiringDate)
@@ -40,7 +39,6 @@ class ApplyDailyResetUseCase @Inject constructor(
         val completionRate = if (totalExpiring > 0) completed.size.toFloat() / totalExpiring else 0f
 
         val xpGained = completed.sumOf { it.effectiveXpReward }
-        val hadAnyCompletion = completed.isNotEmpty()
         val fullMissDay = !expiringWasRestDay && completed.isEmpty() && totalExpiring > 0
         val newMissDays = if (fullMissDay) profile.consecutiveMissDays + 1 else 0
         val isGraceDay = fullMissDay && newMissDays == 1 && !profile.pendingWarning
@@ -48,16 +46,12 @@ class ApplyDailyResetUseCase @Inject constructor(
         val xpLost = if (expiringWasRestDay || isGraceDay) {
             0
         } else {
-            failed.sumOf { mission ->
-                if (mission.isSystemMandate) mission.penaltyXp / 2 else mission.penaltyXp
-            }
+            failed.sumOf { MissionPenaltyPolicy.systemMandateXpPenalty(it) }
         }
         val hpLost = if (expiringWasRestDay || isGraceDay) {
             0
         } else {
-            failed.sumOf { mission ->
-                if (mission.isSystemMandate) 0 else mission.penaltyHp
-            }
+            failed.sumOf { MissionPenaltyPolicy.systemMandateHpPenalty(it) }
         }
         val hpGained = completed.size * 5
 

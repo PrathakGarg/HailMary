@@ -34,19 +34,7 @@ fun StatusWindowScreen(
 
     Scaffold(
         containerColor = BackgroundDeep,
-        topBar = {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(BackgroundSurface)
-                    .padding(top = 44.dp, start = 16.dp, end = 16.dp, bottom = 8.dp)
-            ) {
-                Text(
-                    "STATUS",
-                    style = AriseTypography.headlineSmall.copy(letterSpacing = 3.sp)
-                )
-            }
-        }
+        topBar = { AriseTopBar(title = "STATUS") }
     ) { padding ->
         profile?.let { p ->
             Column(
@@ -205,14 +193,6 @@ fun StatusWindowScreen(
     }
 }
 
-@Composable
-private fun SectionLabel(label: String) {
-    Text(
-        label,
-        style = AriseTypography.labelSmall.copy(color = TextDim, letterSpacing = 2.sp),
-        modifier = Modifier.padding(vertical = 4.dp)
-    )
-}
 
 @Composable
 fun StatRowItem(

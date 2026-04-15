@@ -40,9 +40,6 @@ interface MissionDao {
     @Query("UPDATE missions SET is_failed = 1, streak_count = 0 WHERE due_date = :date AND type = 'DAILY' AND is_completed = 0 AND is_failed = 0 AND is_skipped = 0")
     suspend fun failActiveDailyMissionsForDate(date: String)
 
-    @Update
-    suspend fun updateMission(mission: MissionEntity)
-
     @Query("UPDATE missions SET is_completed = 1, completed_at = :completedAt, streak_count = :streak, accepted_mini_version = :usedMini WHERE id = :id")
     suspend fun markCompleted(id: String, completedAt: Long, streak: Int, usedMini: Boolean)
 

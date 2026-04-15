@@ -55,7 +55,7 @@ class HomeViewModel @Inject constructor(
     private val dailyLogDao: DailyLogDao,
     private val completeMission: CompleteMissionUseCase,
     private val failMission: FailMissionUseCase,
-    private val resetMissionOutcome: ResetMissionOutcomeUseCase,
+    private val resetMissionOutcomeUseCase: ResetMissionOutcomeUseCase,
     private val dataStore: OnboardingDataStore,
     private val timeProvider: TimeProvider
 ) : ViewModel() {
@@ -149,7 +149,7 @@ class HomeViewModel @Inject constructor(
 
     fun resetMissionOutcome(missionId: String) {
         viewModelScope.launch {
-            resetMissionOutcome(missionId)
+            resetMissionOutcomeUseCase(missionId)
         }
     }
 

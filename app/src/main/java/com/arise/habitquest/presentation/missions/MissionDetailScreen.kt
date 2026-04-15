@@ -58,16 +58,10 @@ fun MissionDetailScreen(
         containerColor = BackgroundDeep,
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         topBar = {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(Brush.verticalGradient(listOf(catColor.copy(0.08f), BackgroundDeep)))
-                    .padding(top = 44.dp, start = 8.dp, end = 16.dp, bottom = 8.dp)
-            ) {
-                IconButton(onClick = onBack) {
-                    Icon(Icons.Filled.ArrowBack, "Back", tint = TextSecondary)
-                }
-            }
+            AriseTopBar(
+                onBack = onBack,
+                gradientBackground = Brush.verticalGradient(listOf(catColor.copy(0.08f), BackgroundDeep))
+            )
         },
         bottomBar = {
             if (mission.isActive) {

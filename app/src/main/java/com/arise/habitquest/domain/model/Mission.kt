@@ -61,6 +61,6 @@ data class Mission(
     val isSystemMandate: Boolean = false   // Injected by System for all-round growth
 ) {
     val isActive: Boolean get() = !isCompleted && !isFailed && !isSkipped
-    val progressPercent: Float get() = if (progressTarget > 0) progressCurrent.toFloat() / progressTarget else 0f
+    val progressPercent: Float get() = progressPercent(progressCurrent, progressTarget)
     val effectiveXpReward: Int get() = if (acceptedMiniVersion) (xpReward * 0.5f).toInt() else xpReward
 }

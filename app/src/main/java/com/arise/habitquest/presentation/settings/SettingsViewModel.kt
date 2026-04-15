@@ -113,7 +113,7 @@ class SettingsViewModel @Inject constructor(
             val profile = _uiState.value.profile ?: return@launch
             userRepository.upsertProfile(profile.copy(notificationHour = hour))
             // Reschedule the morning worker so the new time takes effect immediately.
-            MorningNotificationWorker.schedule(WorkManager.getInstance(context), hour)
+            MorningNotificationWorker.schedule(WorkManager.getInstance(context), timeProvider, hour)
         }
     }
 

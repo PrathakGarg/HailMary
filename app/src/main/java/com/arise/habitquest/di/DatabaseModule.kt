@@ -1,7 +1,6 @@
 package com.arise.habitquest.di
 
 import android.content.Context
-import androidx.room.Room
 import com.arise.habitquest.data.local.database.AppDatabase
 import com.arise.habitquest.data.local.database.dao.*
 import dagger.Module
@@ -18,11 +17,7 @@ object DatabaseModule {
     @Provides
     @Singleton
     fun provideAppDatabase(@ApplicationContext context: Context): AppDatabase =
-        Room.databaseBuilder(
-            context,
-            AppDatabase::class.java,
-            "arise_database"
-        ).build()
+        AppDatabase.getInstance(context)
 
     @Provides fun provideUserProfileDao(db: AppDatabase): UserProfileDao = db.userProfileDao()
     @Provides fun provideMissionDao(db: AppDatabase): MissionDao = db.missionDao()

@@ -4,17 +4,14 @@ import com.arise.habitquest.data.generator.MissionGenerator
 import com.arise.habitquest.data.local.datastore.OnboardingDataStore
 import com.arise.habitquest.data.time.TimeProvider
 import com.arise.habitquest.domain.model.OnboardingAnswers
-import com.arise.habitquest.domain.repository.AchievementRepository
+import com.arise.habitquest.domain.model.OnboardingConfigCodec
 import com.arise.habitquest.domain.repository.MissionRepository
 import com.arise.habitquest.domain.repository.UserRepository
-import kotlinx.serialization.json.*
-import java.time.LocalDate
 import javax.inject.Inject
 
 class CompleteOnboardingUseCase @Inject constructor(
     private val userRepository: UserRepository,
     private val missionRepository: MissionRepository,
-    private val achievementRepository: AchievementRepository,
     private val generator: MissionGenerator,
     private val dataStore: OnboardingDataStore,
     private val seedAchievements: SeedAchievementsUseCase,
@@ -28,12 +25,12 @@ class CompleteOnboardingUseCase @Inject constructor(
 
         // Compute and store template IDs for future daily generation
         val templateIds = generator.getTemplateIds(answers)
-        val answersJson = buildJsonObject {
-            put("templateIds", buildJsonArray { templateIds.forEach { add(it) } })
-            put("restDay", answers.restDay.ordinal)
-            put("startingDifficulty", answers.startingDifficulty.name)
-            put("goals", buildJsonArray { answers.goals.forEach { add(it.name) } })
-        }.toString()
+        val answersJson = OnboardingConfigCodec.encode(
+            templateIds = templateIds,
+            restDay = answers.restDay,
+            startingDifficulty = answers.startingDifficulty,
+            goals = answers.goals
+        )
 
         val fullProfile = profile.copy(
             onboardingComplete = true,
