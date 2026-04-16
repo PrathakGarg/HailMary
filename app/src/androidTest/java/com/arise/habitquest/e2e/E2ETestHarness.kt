@@ -367,6 +367,77 @@ object E2ETestHarness {
         }
     }
 
+    fun seedHistoryScenarioWithoutTodayLog(context: Context = targetContext()) {
+        val dataStore = OnboardingDataStore(context)
+        val db = AppDatabase.getInstance(context)
+        val today = TimeProvider.getInstance(context).sessionDay()
+
+        runBlocking {
+            dataStore.setOnboardingComplete(true)
+            dataStore.setHunterName("E2E Hunter")
+            dataStore.setNotificationHour(8)
+            dataStore.setLastDailyResetDate(today.toString())
+
+            db.userProfileDao().upsertProfile(
+                UserProfileEntity(
+                    hunterName = "E2E Hunter",
+                    epithet = "Silent Fierce Relentless",
+                    title = "The Unawakened",
+                    rank = "E",
+                    level = 2,
+                    xp = 45L,
+                    xpToNextLevel = 200L,
+                    streakCurrent = 1,
+                    streakBest = 4,
+                    daysSinceJoin = 6,
+                    totalMissionsCompleted = 4,
+                    totalXpEarned = 140L,
+                    onboardingComplete = true,
+                    joinDate = today.minusDays(5).toString()
+                )
+            )
+
+            listOf(
+                DailyLogEntity(
+                    date = today.minusDays(4).toString(),
+                    xpGained = 35,
+                    rankSnapshot = "E",
+                    levelSnapshot = 1,
+                    completionRate = 0.5f,
+                    totalMissions = 2,
+                    systemMessage = "Recovered."
+                ),
+                DailyLogEntity(
+                    date = today.minusDays(3).toString(),
+                    xpGained = 50,
+                    rankSnapshot = "E",
+                    levelSnapshot = 1,
+                    completionRate = 0.75f,
+                    totalMissions = 2,
+                    systemMessage = "Stable."
+                ),
+                DailyLogEntity(
+                    date = today.minusDays(2).toString(),
+                    xpGained = 70,
+                    rankSnapshot = "E",
+                    levelSnapshot = 2,
+                    completionRate = 1.0f,
+                    totalMissions = 2,
+                    systemMessage = "Perfect execution."
+                ),
+                DailyLogEntity(
+                    date = today.minusDays(1).toString(),
+                    xpGained = 30,
+                    rankSnapshot = "E",
+                    levelSnapshot = 2,
+                    completionRate = 0.25f,
+                    totalMissions = 2,
+                    systemMessage = "Partial success."
+                )
+            ).forEach { db.dailyLogDao().upsertLog(it) }
+        }
+    }
+
     fun getUserProfileEntity(context: Context = targetContext()): UserProfileEntity? {
         val db = AppDatabase.getInstance(context)
         return runBlocking { db.userProfileDao().getUserProfile() }

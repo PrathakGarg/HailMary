@@ -70,6 +70,10 @@ fun HistoryScreen(
 
             // ── Calendar heatmap ─────────────────────────────────────────────
             SectionHeader("GATE HISTORY — LAST 90 DAYS")
+            Text(
+                "Today: ${state.today.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.getDefault())} ${state.today.month.getDisplayName(TextStyle.SHORT, Locale.getDefault())} ${state.today.dayOfMonth} (gold-outlined tile)",
+                style = AriseTypography.labelSmall.copy(color = TextSecondary, fontSize = 10.sp)
+            )
             CalendarHeatmap(days = state.calendarDays, today = state.today)
 
             // ── Legend ───────────────────────────────────────────────────────
@@ -152,6 +156,12 @@ private fun SectionHeader(text: String) {
 private fun CalendarHeatmap(days: List<DayEntry>, today: LocalDate) {
     // 13 weeks × 7 days grid
     val weeks = days.chunked(7)
+    val loggedDays = days.count { it.hasData }
+    val perfectDays = days.count { it.hasData && it.completionRate >= 1.0f }
+    val trailing7 = days.takeLast(7)
+    val lastWeekRate = if (trailing7.isNotEmpty()) {
+        (trailing7.count { it.hasData && it.completionRate > 0f } * 100) / trailing7.size
+    } else 0
 
     Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
         Box(modifier = Modifier.testTag("history_heatmap")) {
@@ -192,28 +202,55 @@ private fun CalendarHeatmap(days: List<DayEntry>, today: LocalDate) {
                 // Pad if week has fewer than 7 days
                 val paddedWeek = week + List(7 - week.size) { null }
                 paddedWeek.forEach { entry ->
+                    val isToday = entry?.date == today
+                    val cellColor = when {
+                        entry == null -> Color.Transparent
+                        isToday -> PurpleCore
+                        !entry.hasData -> BackgroundElevated
+                        entry.completionRate >= 1.0f -> EmeraldCore
+                        entry.completionRate >= 0.75f -> EmeraldCore.copy(alpha = 0.7f)
+                        entry.completionRate >= 0.5f -> GoldCore.copy(alpha = 0.6f)
+                        entry.completionRate > 0f -> CrimsonCore.copy(alpha = 0.5f)
+                        else -> BackgroundElevated
+                    }
                     Box(
                         modifier = Modifier
                             .weight(1f)
                             .aspectRatio(1f)
                             .clip(RoundedCornerShape(2.dp))
-                            .background(
-                                when {
-                                    entry == null -> Color.Transparent
-                                    !entry.hasData -> BackgroundElevated
-                                    entry.date == today -> PurpleCore
-                                    entry.completionRate >= 1.0f -> EmeraldCore
-                                    entry.completionRate >= 0.75f -> EmeraldCore.copy(alpha = 0.7f)
-                                    entry.completionRate >= 0.5f -> GoldCore.copy(alpha = 0.6f)
-                                    entry.completionRate > 0f -> CrimsonCore.copy(alpha = 0.5f)
-                                    else -> BackgroundElevated
-                                }
+                            .background(cellColor)
+                            .border(
+                                width = if (isToday) 1.25.dp else 0.25.dp,
+                                color = if (isToday) GoldCore else BorderDefault.copy(alpha = 0.35f),
+                                shape = RoundedCornerShape(2.dp)
                             )
                     )
                 }
             }
         }
             }
+        }
+
+        Spacer(Modifier.height(6.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                "$loggedDays/91 days logged",
+                style = AriseTypography.labelSmall.copy(color = TextSecondary, fontSize = 10.sp)
+            )
+            Text("•", style = AriseTypography.labelSmall.copy(color = TextDim, fontSize = 10.sp))
+            Text(
+                "$perfectDays perfect",
+                style = AriseTypography.labelSmall.copy(color = TextSecondary, fontSize = 10.sp)
+            )
+            Text("•", style = AriseTypography.labelSmall.copy(color = TextDim, fontSize = 10.sp))
+            Text(
+                "7d active $lastWeekRate%",
+                style = AriseTypography.labelSmall.copy(color = TextSecondary, fontSize = 10.sp)
+            )
         }
     }
 }
@@ -232,11 +269,18 @@ private fun HeatmapLegend() {
                     .size(12.dp)
                     .clip(RoundedCornerShape(2.dp))
                     .background(color)
+                    .border(0.5.dp, BorderDefault.copy(alpha = 0.35f), RoundedCornerShape(2.dp))
             )
         }
         Text("More", style = AriseTypography.labelSmall.copy(color = TextDim, fontSize = 9.sp))
         Spacer(Modifier.weight(1f))
-        Box(Modifier.size(12.dp).clip(RoundedCornerShape(2.dp)).background(PurpleCore))
+        Box(
+            Modifier
+                .size(12.dp)
+                .clip(RoundedCornerShape(2.dp))
+                .background(PurpleCore)
+                .border(1.dp, GoldCore, RoundedCornerShape(2.dp))
+        )
         Text("Today", style = AriseTypography.labelSmall.copy(color = TextDim, fontSize = 9.sp))
     }
 }
