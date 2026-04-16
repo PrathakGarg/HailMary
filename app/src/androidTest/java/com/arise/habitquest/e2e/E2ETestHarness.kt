@@ -384,56 +384,105 @@ object E2ETestHarness {
                     epithet = "Silent Fierce Relentless",
                     title = "The Unawakened",
                     rank = "E",
-                    level = 2,
-                    xp = 45L,
-                    xpToNextLevel = 200L,
-                    streakCurrent = 1,
-                    streakBest = 4,
-                    daysSinceJoin = 6,
-                    totalMissionsCompleted = 4,
-                    totalXpEarned = 140L,
+                    level = 3,
+                    xp = 280L,
+                    xpToNextLevel = 400L,
+                    streakCurrent = 5,
+                    streakBest = 7,
+                    daysSinceJoin = 15,
+                    totalMissionsCompleted = 22,
+                    totalXpEarned = 620L,
                     onboardingComplete = true,
-                    joinDate = today.minusDays(5).toString()
+                    joinDate = today.minusDays(14).toString()
                 )
             )
 
+            // 14 days of varied data: rest days, partial, perfect, missed
             listOf(
                 DailyLogEntity(
-                    date = today.minusDays(4).toString(),
-                    xpGained = 35,
-                    rankSnapshot = "E",
-                    levelSnapshot = 1,
-                    completionRate = 0.5f,
-                    totalMissions = 2,
-                    systemMessage = "Recovered."
+                    date = today.minusDays(14).toString(),
+                    xpGained = 20, rankSnapshot = "E", levelSnapshot = 1,
+                    completionRate = 0.33f, totalMissions = 3,
+                    systemMessage = "Rough start."
                 ),
                 DailyLogEntity(
+                    date = today.minusDays(13).toString(),
+                    xpGained = 40, rankSnapshot = "E", levelSnapshot = 1,
+                    completionRate = 0.5f, totalMissions = 2,
+                    systemMessage = "Half done."
+                ),
+                DailyLogEntity(
+                    date = today.minusDays(12).toString(),
+                    xpGained = 60, rankSnapshot = "E", levelSnapshot = 1,
+                    completionRate = 0.75f, totalMissions = 4,
+                    systemMessage = "Good progress."
+                ),
+                DailyLogEntity(
+                    date = today.minusDays(11).toString(),
+                    xpGained = 80, rankSnapshot = "E", levelSnapshot = 2,
+                    completionRate = 1.0f, totalMissions = 3,
+                    systemMessage = "Perfect execution."
+                ),
+                // day -10: rest day (no missions logged)
+                DailyLogEntity(
+                    date = today.minusDays(10).toString(),
+                    xpGained = 0, rankSnapshot = "E", levelSnapshot = 2,
+                    completionRate = 0f, totalMissions = 0,
+                    wasRestDay = true,
+                    systemMessage = "Rest day."
+                ),
+                DailyLogEntity(
+                    date = today.minusDays(9).toString(),
+                    xpGained = 15, rankSnapshot = "E", levelSnapshot = 2,
+                    completionRate = 0.15f, totalMissions = 3,
+                    systemMessage = "Barely scraped by."
+                ),
+                DailyLogEntity(
+                    date = today.minusDays(8).toString(),
+                    xpGained = 45, rankSnapshot = "E", levelSnapshot = 2,
+                    completionRate = 0.6f, totalMissions = 3,
+                    systemMessage = "Steady."
+                ),
+                DailyLogEntity(
+                    date = today.minusDays(7).toString(),
+                    xpGained = 55, rankSnapshot = "E", levelSnapshot = 2,
+                    completionRate = 0.8f, totalMissions = 3,
+                    systemMessage = "Strong."
+                ),
+                // day -6: missed (no entry at all — gap)
+                DailyLogEntity(
+                    date = today.minusDays(5).toString(),
+                    xpGained = 70, rankSnapshot = "E", levelSnapshot = 2,
+                    completionRate = 0.92f, totalMissions = 4,
+                    systemMessage = "Near perfect."
+                ),
+                DailyLogEntity(
+                    date = today.minusDays(4).toString(),
+                    xpGained = 80, rankSnapshot = "E", levelSnapshot = 3,
+                    completionRate = 1.0f, totalMissions = 3,
+                    systemMessage = "Flawless."
+                ),
+                // day -3: rest day
+                DailyLogEntity(
                     date = today.minusDays(3).toString(),
-                    xpGained = 50,
-                    rankSnapshot = "E",
-                    levelSnapshot = 1,
-                    completionRate = 0.75f,
-                    totalMissions = 2,
-                    systemMessage = "Stable."
+                    xpGained = 0, rankSnapshot = "E", levelSnapshot = 3,
+                    completionRate = 0f, totalMissions = 0,
+                    wasRestDay = true,
+                    systemMessage = "Recovery."
                 ),
                 DailyLogEntity(
                     date = today.minusDays(2).toString(),
-                    xpGained = 70,
-                    rankSnapshot = "E",
-                    levelSnapshot = 2,
-                    completionRate = 1.0f,
-                    totalMissions = 2,
-                    systemMessage = "Perfect execution."
+                    xpGained = 65, rankSnapshot = "E", levelSnapshot = 3,
+                    completionRate = 0.85f, totalMissions = 4,
+                    systemMessage = "Back in form."
                 ),
                 DailyLogEntity(
                     date = today.minusDays(1).toString(),
-                    xpGained = 30,
-                    rankSnapshot = "E",
-                    levelSnapshot = 2,
-                    completionRate = 0.25f,
-                    totalMissions = 2,
-                    systemMessage = "Partial success."
+                    xpGained = 35, rankSnapshot = "E", levelSnapshot = 3,
+                    completionRate = 0.4f, totalMissions = 3,
+                    systemMessage = "Slip."
                 )
+                // today: no entry — tests "today with no data" appearance
             ).forEach { db.dailyLogDao().upsertLog(it) }
         }
     }

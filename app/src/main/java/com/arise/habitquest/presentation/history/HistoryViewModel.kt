@@ -21,7 +21,10 @@ import javax.inject.Inject
 data class DayEntry(
     val date: LocalDate,
     val completionRate: Float,   // 0f = no data / rest day, >0 = logged
-    val hasData: Boolean
+    val hasData: Boolean,
+    val xpGained: Int = 0,
+    val totalMissions: Int = 0,
+    val wasRestDay: Boolean = false
 )
 
 data class AnalysisInsight(
@@ -41,6 +44,7 @@ data class HistoryUiState(
     val bestStreak: Int = 0,
     val currentStreak: Int = 0,
     val today: LocalDate = LocalDate.MIN,
+    val joinDate: LocalDate = LocalDate.MIN,
     val isLoading: Boolean = true
 )
 
@@ -73,7 +77,10 @@ class HistoryViewModel @Inject constructor(
                 DayEntry(
                     date = d,
                     completionRate = log?.completionRate ?: 0f,
-                    hasData = log != null
+                    hasData = log != null,
+                    xpGained = log?.xpGained ?: 0,
+                    totalMissions = log?.totalMissions ?: 0,
+                    wasRestDay = log?.wasRestDay == true
                 )
             }
 
@@ -98,6 +105,7 @@ class HistoryViewModel @Inject constructor(
 
             // User profile stats
             val profile = userRepository.getUserProfile()
+            val joinDate = profile?.joinDate ?: sessionDate
 
             _state.value = HistoryUiState(
                 calendarDays = days,
@@ -109,6 +117,7 @@ class HistoryViewModel @Inject constructor(
                 bestStreak = profile?.streakBest ?: 0,
                 currentStreak = profile?.streakCurrent ?: 0,
                 today = sessionDate,
+                joinDate = joinDate,
                 isLoading = false
             )
         }
