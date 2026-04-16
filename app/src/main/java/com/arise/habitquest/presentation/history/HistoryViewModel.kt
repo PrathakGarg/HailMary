@@ -4,10 +4,16 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.arise.habitquest.data.local.database.dao.DailyLogDao
 import com.arise.habitquest.data.local.database.dao.MissionDao
+import com.arise.habitquest.data.local.database.dao.MissionTrackingDao
 import com.arise.habitquest.data.local.database.entity.DailyLogEntity
+import com.arise.habitquest.data.local.database.entity.MissionTrackingLogEntity
 import com.arise.habitquest.data.time.TimeProvider
+import com.arise.habitquest.domain.model.MuscleRegion
 import com.arise.habitquest.domain.model.MissionCategory
 import com.arise.habitquest.domain.repository.UserRepository
+import com.arise.habitquest.presentation.progression.ProgramDirective
+import com.arise.habitquest.presentation.progression.buildProgramDirectives
+import com.arise.habitquest.domain.usecase.GetWeeklyMuscleCoverageUseCase
 import com.arise.habitquest.ui.components.CategoryStats
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -34,11 +40,21 @@ data class AnalysisInsight(
     val isPositive: Boolean
 )
 
+data class MuscleCoverageEntry(
+    val region: MuscleRegion,
+    val assignedLoad: Float,
+    val completedLoad: Float,
+    val completionRatio: Float
+)
+
 data class HistoryUiState(
     val calendarDays: List<DayEntry> = emptyList(),  // 91 days (13 weeks)
     val weeklyXp: List<Pair<String, Long>> = emptyList(), // last 7 weeks label→xp
     val insights: List<AnalysisInsight> = emptyList(),
+    val directives: List<ProgramDirective> = emptyList(),
+    val recentTrackingLogs: List<MissionTrackingLogEntity> = emptyList(),
     val categoryStats: List<CategoryStats> = emptyList(), // 6 categories, last 30 days
+    val weeklyMuscleCoverage: List<MuscleCoverageEntry> = emptyList(),
     val totalMissionsCompleted: Int = 0,
     val totalXpEarned: Long = 0L,
     val bestStreak: Int = 0,
@@ -52,7 +68,9 @@ data class HistoryUiState(
 class HistoryViewModel @Inject constructor(
     private val logDao: DailyLogDao,
     private val missionDao: MissionDao,
+    private val missionTrackingDao: MissionTrackingDao,
     private val userRepository: UserRepository,
+    private val weeklyCoverageUseCase: GetWeeklyMuscleCoverageUseCase,
     private val timeProvider: TimeProvider
 ) : ViewModel() {
 
@@ -97,21 +115,49 @@ class HistoryViewModel @Inject constructor(
                 label to xp
             }
 
-            // Analysis insights
-            val insights = buildInsights(days, logs)
-
             // Category pain-point stats (last 30 days of missions)
             val categoryStats = buildCategoryStats(sessionDate, fmt)
+
+            val weeklyCoverage = weeklyCoverageUseCase(sessionDate).regions.map { row ->
+                MuscleCoverageEntry(
+                    region = row.region,
+                    assignedLoad = row.assignedLoad,
+                    completedLoad = row.completedLoad,
+                    completionRatio = if (row.assignedLoad > 0f) {
+                        (row.completedLoad / row.assignedLoad).coerceIn(0f, 1f)
+                    } else 0f
+                )
+            }
 
             // User profile stats
             val profile = userRepository.getUserProfile()
             val joinDate = profile?.joinDate ?: sessionDate
+            val recentCompletionRate = logs
+                .filter { !LocalDate.parse(it.date, fmt).isBefore(sessionDate.minusDays(6)) }
+                .map { it.completionRate }
+                .average()
+                .toFloat()
+                .takeIf { !it.isNaN() }
+                ?: 0f
+
+            val directives = buildProgramDirectives(
+                profile = profile,
+                weeklyCoverage = weeklyCoverage,
+                recentCompletionRate = recentCompletionRate
+            )
+            val recentTrackingLogs = missionTrackingDao.getRecentLogs(limit = 20)
+
+            // Analysis insights
+            val insights = buildInsights(days, logs)
 
             _state.value = HistoryUiState(
                 calendarDays = days,
                 weeklyXp = weeklyXp,
                 insights = insights,
+                directives = directives,
+                recentTrackingLogs = recentTrackingLogs,
                 categoryStats = categoryStats,
+                weeklyMuscleCoverage = weeklyCoverage,
                 totalMissionsCompleted = profile?.totalMissionsCompleted ?: 0,
                 totalXpEarned = profile?.totalXpEarned ?: 0L,
                 bestStreak = profile?.streakBest ?: 0,

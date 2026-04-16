@@ -1,7 +1,9 @@
 package com.arise.habitquest.data.generator
 
 import com.arise.habitquest.domain.model.Difficulty
+import com.arise.habitquest.domain.model.MuscleRegion
 import com.arise.habitquest.domain.model.MissionCategory
+import com.arise.habitquest.domain.model.PhysicalMissionFamily
 import com.arise.habitquest.domain.model.Stat
 
 /**
@@ -24,7 +26,9 @@ data class MissionTemplate(
     val penaltyXpBase: Int = 15,
     val penaltyHpBase: Int = 5,
     val iconName: String = "fitness_center",
-    val scheduledTimeHint: String? = null  // MORNING / AFTERNOON / EVENING
+    val scheduledTimeHint: String? = null,  // MORNING / AFTERNOON / EVENING
+    val physicalFamily: PhysicalMissionFamily = PhysicalMissionFamily.UNSPECIFIED,
+    val muscleLoad: Map<MuscleRegion, Float> = emptyMap()
 )
 
 object MissionTemplates {
@@ -43,7 +47,14 @@ object MissionTemplates {
         baseXp = 60,
         statRewards = mapOf(Stat.STR to 1, Stat.VIT to 1),
         penaltyXpBase = 15, penaltyHpBase = 8,
-        iconName = "fitness_center", scheduledTimeHint = "MORNING"
+        iconName = "fitness_center", scheduledTimeHint = "MORNING",
+        physicalFamily = PhysicalMissionFamily.PUSH,
+        muscleLoad = mapOf(
+            MuscleRegion.CHEST to 0.4f,
+            MuscleRegion.TRICEPS to 0.3f,
+            MuscleRegion.SHOULDERS to 0.2f,
+            MuscleRegion.CORE to 0.1f
+        )
     )
 
     val squat = MissionTemplate(
@@ -58,7 +69,14 @@ object MissionTemplates {
         baseXp = 55,
         statRewards = mapOf(Stat.STR to 1, Stat.AGI to 1),
         penaltyXpBase = 12, penaltyHpBase = 7,
-        iconName = "directions_run"
+        iconName = "directions_run",
+        physicalFamily = PhysicalMissionFamily.LOWER_BODY,
+        muscleLoad = mapOf(
+            MuscleRegion.QUADS to 0.45f,
+            MuscleRegion.GLUTES to 0.3f,
+            MuscleRegion.HAMSTRINGS to 0.15f,
+            MuscleRegion.CORE to 0.1f
+        )
     )
 
     val morningRun = MissionTemplate(
@@ -73,7 +91,14 @@ object MissionTemplates {
         baseXp = 80,
         statRewards = mapOf(Stat.AGI to 2, Stat.END to 1),
         penaltyXpBase = 20, penaltyHpBase = 10,
-        iconName = "directions_run", scheduledTimeHint = "MORNING"
+        iconName = "directions_run", scheduledTimeHint = "MORNING",
+        physicalFamily = PhysicalMissionFamily.CARDIO_NEAT,
+        muscleLoad = mapOf(
+            MuscleRegion.CARDIO_CONDITIONING to 0.6f,
+            MuscleRegion.QUADS to 0.15f,
+            MuscleRegion.HAMSTRINGS to 0.15f,
+            MuscleRegion.CALVES to 0.1f
+        )
     )
 
     val plank = MissionTemplate(
@@ -88,7 +113,13 @@ object MissionTemplates {
         baseXp = 45,
         statRewards = mapOf(Stat.STR to 1, Stat.END to 1),
         penaltyXpBase = 10, penaltyHpBase = 5,
-        iconName = "fitness_center"
+        iconName = "fitness_center",
+        physicalFamily = PhysicalMissionFamily.CORE_STABILITY,
+        muscleLoad = mapOf(
+            MuscleRegion.CORE to 0.7f,
+            MuscleRegion.SHOULDERS to 0.15f,
+            MuscleRegion.GLUTES to 0.15f
+        )
     )
 
     val coldShower = MissionTemplate(
@@ -102,7 +133,9 @@ object MissionTemplates {
         baseXp = 70,
         statRewards = mapOf(Stat.VIT to 1, Stat.SENSE to 1),
         penaltyXpBase = 15, penaltyHpBase = 8,
-        iconName = "water_drop", scheduledTimeHint = "MORNING"
+        iconName = "water_drop", scheduledTimeHint = "MORNING",
+        physicalFamily = PhysicalMissionFamily.RECOVERY_SUPPORT,
+        muscleLoad = mapOf(MuscleRegion.CARDIO_CONDITIONING to 1.0f)
     )
 
     val stretching = MissionTemplate(
@@ -117,7 +150,16 @@ object MissionTemplates {
         baseXp = 40,
         statRewards = mapOf(Stat.AGI to 1, Stat.VIT to 1),
         penaltyXpBase = 8, penaltyHpBase = 4,
-        iconName = "self_improvement", scheduledTimeHint = "MORNING"
+        iconName = "self_improvement", scheduledTimeHint = "MORNING",
+        physicalFamily = PhysicalMissionFamily.MOBILITY_PREHAB,
+        muscleLoad = mapOf(
+            MuscleRegion.SHOULDERS to 0.2f,
+            MuscleRegion.UPPER_BACK_LATS to 0.15f,
+            MuscleRegion.CORE to 0.1f,
+            MuscleRegion.GLUTES to 0.2f,
+            MuscleRegion.QUADS to 0.15f,
+            MuscleRegion.HAMSTRINGS to 0.2f
+        )
     )
 
     val steps = MissionTemplate(
@@ -131,7 +173,14 @@ object MissionTemplates {
         baseXp = 65,
         statRewards = mapOf(Stat.AGI to 1, Stat.END to 1),
         penaltyXpBase = 15, penaltyHpBase = 7,
-        iconName = "directions_walk"
+        iconName = "directions_walk",
+        physicalFamily = PhysicalMissionFamily.CARDIO_NEAT,
+        muscleLoad = mapOf(
+            MuscleRegion.CARDIO_CONDITIONING to 0.55f,
+            MuscleRegion.QUADS to 0.2f,
+            MuscleRegion.HAMSTRINGS to 0.15f,
+            MuscleRegion.CALVES to 0.1f
+        )
     )
 
     // ── MENTAL ────────────────────────────────────────────────────────────────

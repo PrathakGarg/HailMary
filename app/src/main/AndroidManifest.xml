@@ -48,6 +48,14 @@
             </intent-filter>
         </receiver>
 
+        <receiver
+            android:name=".worker.DebugSeedReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.arise.habitquest.action.DEBUG_SEED_WEEK" />
+            </intent-filter>
+        </receiver>
+
         <!-- Home screen widget -->
         <receiver
             android:name=".widget.AriseWidgetReceiver"

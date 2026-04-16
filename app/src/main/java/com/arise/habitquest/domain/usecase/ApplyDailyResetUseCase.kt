@@ -8,7 +8,9 @@ import com.arise.habitquest.data.time.TimeProvider
 import com.arise.habitquest.domain.repository.MissionRepository
 import com.arise.habitquest.domain.repository.UserRepository
 import com.arise.habitquest.domain.usecase.policy.MissionPenaltyPolicy
+import com.arise.habitquest.domain.usecase.policy.ProgressionStatePolicy
 import com.arise.habitquest.domain.usecase.policy.RestDayPolicy
+import com.arise.habitquest.domain.model.OnboardingConfigCodec
 import javax.inject.Inject
 
 class ApplyDailyResetUseCase @Inject constructor(
@@ -121,6 +123,21 @@ class ApplyDailyResetUseCase @Inject constructor(
             if (newDiff != currentDiff) {
                 userRepository.updateAdaptiveDifficulty(newDiff)
             }
+
+            val safetyThrottle = newDiff < currentDiff
+            val nextState = ProgressionStatePolicy.nextState(
+                current = profile.progressionState,
+                recentCompletionRate = avgRate,
+                consecutiveMissDays = newMissDays,
+                safetyThrottle = safetyThrottle
+            )
+            val onboardingConfig = OnboardingConfigCodec.decode(profile.onboardingAnswersJson)
+            val recommendation = ProgressionStatePolicy.recommendTransition(
+                goalCategories = onboardingConfig.goalCategories,
+                recentCompletionRate = avgRate,
+                consecutiveMissDays = newMissDays
+            )
+            userRepository.updateProgressionState(nextState.name, recommendation)
         }
 
         // Increment day count

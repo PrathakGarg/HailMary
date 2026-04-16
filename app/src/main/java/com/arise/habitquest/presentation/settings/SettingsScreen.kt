@@ -18,6 +18,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.arise.habitquest.data.generator.MissionTemplates
 import com.arise.habitquest.domain.model.FocusTheme
+import com.arise.habitquest.domain.model.MissionCategory
+import com.arise.habitquest.domain.model.ProgressionPreference
 import com.arise.habitquest.ui.components.AriseTopBar
 import com.arise.habitquest.ui.components.glowEffect
 import com.arise.habitquest.ui.theme.*
@@ -112,6 +114,14 @@ fun SettingsScreen(
                     Text("MANAGE BLOCKLIST", style = AriseTypography.labelMedium)
                 }
             }
+
+            ProgressionProfileSection(
+                profile = profile,
+                onSetTrackFocus = viewModel::setTrackFocus,
+                onSetProgressionPreference = viewModel::setProgressionPreference,
+                onSetShoulderRiskFlag = viewModel::setShoulderRiskFlag,
+                onSetHeatRiskFlag = viewModel::setHeatRiskFlag
+            )
 
             // ── Rest day ──────────────────────────────────────────────────
             SettingsSection("REST DAY") {
@@ -333,6 +343,84 @@ fun SettingsScreen(
                         Text("DONE", style = AriseTypography.labelMedium.copy(color = PurpleCore))
                     }
                 }
+            )
+        }
+    }
+}
+
+@Composable
+internal fun ProgressionProfileSection(
+    profile: com.arise.habitquest.domain.model.UserProfile?,
+    onSetTrackFocus: (MissionCategory) -> Unit,
+    onSetProgressionPreference: (ProgressionPreference) -> Unit,
+    onSetShoulderRiskFlag: (Boolean) -> Unit,
+    onSetHeatRiskFlag: (Boolean) -> Unit
+) {
+    SettingsSection("PROGRESSION PROFILE") {
+        Text(
+            "Tune your primary track and pacing style. These preferences guide weekly planning and safety behavior.",
+            style = AriseTypography.bodySmall.copy(color = TextSecondary)
+        )
+
+        Spacer(Modifier.height(6.dp))
+        Text("Track Focus", style = AriseTypography.labelMedium.copy(color = TextPrimary))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+            listOf(MissionCategory.PHYSICAL, MissionCategory.PRODUCTIVITY, MissionCategory.WELLNESS).forEach { category ->
+                FilterChip(
+                    selected = profile?.trackFocus == category,
+                    onClick = { onSetTrackFocus(category) },
+                    label = { Text(category.displayName, fontSize = 11.sp) },
+                    modifier = Modifier.testTag("settings_track_focus_${category.name.lowercase()}")
+                )
+            }
+        }
+
+        Spacer(Modifier.height(6.dp))
+        Text("Pacing Preference", style = AriseTypography.labelMedium.copy(color = TextPrimary))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+            ProgressionPreference.entries.forEach { preference ->
+                FilterChip(
+                    selected = profile?.progressionPreference == preference,
+                    onClick = { onSetProgressionPreference(preference) },
+                    label = {
+                        Text(
+                            when (preference) {
+                                ProgressionPreference.CONSERVATIVE -> "Conservative"
+                                ProgressionPreference.ASSERTIVE_SAFE -> "Assertive-Safe"
+                                ProgressionPreference.AGGRESSIVE -> "Aggressive"
+                            },
+                            fontSize = 11.sp
+                        )
+                    },
+                    modifier = Modifier.testTag("settings_progression_pref_${preference.name.lowercase()}")
+                )
+            }
+        }
+
+        Spacer(Modifier.height(6.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("Shoulder Risk Flag", style = AriseTypography.bodyMedium.copy(color = TextSecondary))
+            Switch(
+                checked = profile?.shoulderRiskFlag == true,
+                onCheckedChange = onSetShoulderRiskFlag,
+                modifier = Modifier.testTag("settings_shoulder_risk")
+            )
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("Heat Risk Flag", style = AriseTypography.bodyMedium.copy(color = TextSecondary))
+            Switch(
+                checked = profile?.heatRiskFlag == true,
+                onCheckedChange = onSetHeatRiskFlag,
+                modifier = Modifier.testTag("settings_heat_risk")
             )
         }
     }

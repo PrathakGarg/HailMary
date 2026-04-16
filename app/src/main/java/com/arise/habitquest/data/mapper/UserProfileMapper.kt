@@ -7,6 +7,10 @@ import javax.inject.Inject
 
 class UserProfileMapper @Inject constructor() {
 
+    private inline fun <reified T : Enum<T>> enumOrDefault(value: String, default: T): T {
+        return runCatching { enumValueOf<T>(value) }.getOrDefault(default)
+    }
+
     fun toDomain(entity: UserProfileEntity): UserProfile = UserProfile(
         id = entity.id,
         hunterName = entity.hunterName,
@@ -34,6 +38,15 @@ class UserProfileMapper @Inject constructor() {
         streakShields = entity.streakShields,
         graceUsesRemaining = entity.graceUsesRemaining,
         adaptiveDifficulty = entity.adaptiveDifficulty,
+        trackFocus = enumOrDefault(entity.trackFocus, MissionCategory.PHYSICAL),
+        equipmentMode = enumOrDefault(entity.equipmentMode, EquipmentMode.BODYWEIGHT),
+        scheduleStyle = enumOrDefault(entity.scheduleStyle, ScheduleStyle.FIXED_WINDOW),
+        shoulderRiskFlag = entity.shoulderRiskFlag,
+        heatRiskFlag = entity.heatRiskFlag,
+        progressionPreference = enumOrDefault(entity.progressionPreference, ProgressionPreference.ASSERTIVE_SAFE),
+        progressionState = enumOrDefault(entity.progressionState, ProgressionState.PROGRESSING),
+        transitionRecommendation = entity.transitionRecommendation.takeIf { it.isNotBlank() }
+            ?.let { enumOrDefault(it, MissionCategory.PHYSICAL) },
         restDay = entity.restDay,
         notificationHour = entity.notificationHour,
         onboardingComplete = entity.onboardingComplete,
@@ -68,6 +81,14 @@ class UserProfileMapper @Inject constructor() {
         streakShields = domain.streakShields,
         graceUsesRemaining = domain.graceUsesRemaining,
         adaptiveDifficulty = domain.adaptiveDifficulty,
+        trackFocus = domain.trackFocus.name,
+        equipmentMode = domain.equipmentMode.name,
+        scheduleStyle = domain.scheduleStyle.name,
+        shoulderRiskFlag = domain.shoulderRiskFlag,
+        heatRiskFlag = domain.heatRiskFlag,
+        progressionPreference = domain.progressionPreference.name,
+        progressionState = domain.progressionState.name,
+        transitionRecommendation = domain.transitionRecommendation?.name ?: "",
         restDay = domain.restDay,
         notificationHour = domain.notificationHour,
         onboardingComplete = domain.onboardingComplete,

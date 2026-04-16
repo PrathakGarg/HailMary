@@ -21,6 +21,7 @@ object DatabaseModule {
 
     @Provides fun provideUserProfileDao(db: AppDatabase): UserProfileDao = db.userProfileDao()
     @Provides fun provideMissionDao(db: AppDatabase): MissionDao = db.missionDao()
+    @Provides fun provideMissionTrackingDao(db: AppDatabase): MissionTrackingDao = db.missionTrackingDao()
     @Provides fun provideAchievementDao(db: AppDatabase): AchievementDao = db.achievementDao()
     @Provides fun provideDailyLogDao(db: AppDatabase): DailyLogDao = db.dailyLogDao()
     @Provides fun provideShadowDao(db: AppDatabase): ShadowDao = db.shadowDao()

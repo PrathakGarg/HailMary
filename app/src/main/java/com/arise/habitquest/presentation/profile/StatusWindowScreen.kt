@@ -16,6 +16,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.arise.habitquest.domain.model.MissionCategory
+import com.arise.habitquest.domain.model.ProgressionPreference
+import com.arise.habitquest.domain.model.ScheduleStyle
+import com.arise.habitquest.domain.model.UserProfile
+import com.arise.habitquest.presentation.progression.ProgramDirective
+import com.arise.habitquest.presentation.progression.ProgramDirectivesSection
 import com.arise.habitquest.domain.model.Stat
 import com.arise.habitquest.ui.components.*
 import com.arise.habitquest.ui.theme.*
@@ -31,6 +37,7 @@ fun StatusWindowScreen(
 ) {
     val profile by viewModel.profile.collectAsStateWithLifecycle()
     val categoryStats by viewModel.categoryStats.collectAsStateWithLifecycle()
+    val directives by viewModel.directives.collectAsStateWithLifecycle()
 
     Scaffold(
         containerColor = BackgroundDeep,
@@ -109,6 +116,39 @@ fun StatusWindowScreen(
                 }
 
                 Divider(color = BorderDefault)
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    SectionLabel("PROGRAM PROFILE")
+                    ProgramProfileSection(
+                        profile = p,
+                        modifier = Modifier.testTag("status_program_profile")
+                    )
+                }
+
+                Divider(color = BorderDefault)
+
+                if (directives.isNotEmpty()) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(20.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        SectionLabel("SYSTEM DIRECTIVES")
+                        ProgramDirectivesSection(
+                            directives = directives,
+                            modifier = Modifier.testTag("status_system_directives"),
+                            tagPrefix = "status_program_directive"
+                        )
+                    }
+
+                    Divider(color = BorderDefault)
+                }
 
                 // ── Statistics ────────────────────────────────────────────
                 Column(
@@ -191,6 +231,53 @@ fun StatusWindowScreen(
             CircularProgressIndicator(color = PurpleCore)
         }
     }
+}
+
+@Composable
+internal fun ProgramProfileSection(
+    profile: UserProfile,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        StatRowItem(
+            label = "Track Focus",
+            value = profile.trackFocus.displayName,
+            valueModifier = Modifier.testTag("status_track_focus")
+        )
+        StatRowItem(
+            label = "Pacing",
+            value = profile.progressionPreference.displayName(),
+            valueModifier = Modifier.testTag("status_pacing")
+        )
+        StatRowItem(
+            label = "Schedule",
+            value = profile.scheduleStyle.displayName(),
+            valueModifier = Modifier.testTag("status_schedule_style")
+        )
+        val riskLabel = buildList {
+            if (profile.shoulderRiskFlag) add("Shoulder")
+            if (profile.heatRiskFlag) add("Heat")
+        }.ifEmpty { listOf("None") }.joinToString(" / ")
+        StatRowItem(
+            label = "Risk Flags",
+            value = riskLabel,
+            valueModifier = Modifier.testTag("status_risk_flags")
+        )
+    }
+}
+
+private fun ProgressionPreference.displayName(): String = when (this) {
+    ProgressionPreference.CONSERVATIVE -> "Conservative"
+    ProgressionPreference.ASSERTIVE_SAFE -> "Assertive-Safe"
+    ProgressionPreference.AGGRESSIVE -> "Aggressive"
+}
+
+private fun ScheduleStyle.displayName(): String = when (this) {
+    ScheduleStyle.FIXED_WINDOW -> "Fixed Window"
+    ScheduleStyle.FLEXIBLE_SPLIT -> "Flexible Split"
 }
 
 

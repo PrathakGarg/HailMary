@@ -3,8 +3,7 @@ package com.arise.habitquest.domain.usecase
 import com.arise.habitquest.data.generator.MissionGenerator
 import com.arise.habitquest.data.local.datastore.OnboardingDataStore
 import com.arise.habitquest.data.time.TimeProvider
-import com.arise.habitquest.domain.model.OnboardingAnswers
-import com.arise.habitquest.domain.model.OnboardingConfigCodec
+import com.arise.habitquest.domain.model.*
 import com.arise.habitquest.domain.repository.MissionRepository
 import com.arise.habitquest.domain.repository.UserRepository
 import javax.inject.Inject
@@ -25,11 +24,38 @@ class CompleteOnboardingUseCase @Inject constructor(
 
         // Compute and store template IDs for future daily generation
         val templateIds = generator.getTemplateIds(answers)
+        val scheduleStyle = when {
+            answers.availableTime == AvailableTime.FLEXIBLE || answers.availableTime == AvailableTime.SCATTERED ->
+                ScheduleStyle.FLEXIBLE_SPLIT
+            else -> ScheduleStyle.FIXED_WINDOW
+        }
+        val progressionPreference = when (answers.startingDifficulty) {
+            StartingDifficulty.EASY -> ProgressionPreference.CONSERVATIVE
+            StartingDifficulty.HARD -> ProgressionPreference.AGGRESSIVE
+            else -> ProgressionPreference.ASSERTIVE_SAFE
+        }
+        val trackFocus = answers.goals.firstOrNull()?.primaryCategory ?: MissionCategory.PHYSICAL
+
         val answersJson = OnboardingConfigCodec.encode(
             templateIds = templateIds,
             restDay = answers.restDay,
             startingDifficulty = answers.startingDifficulty,
-            goals = answers.goals
+            goals = answers.goals,
+            fitnessLevel = answers.fitnessLevel,
+            sleepQuality = answers.sleepQuality,
+            stressLevel = answers.stressLevel,
+            workHoursPerDay = answers.workHoursPerDay,
+            availableTime = answers.availableTime,
+            failureResponse = answers.failureResponse,
+            accountabilityStyle = answers.accountabilityStyle,
+            longestStreak = answers.longestStreak,
+            failureReasons = answers.failureReasons,
+            progressionPreference = progressionPreference,
+            scheduleStyle = scheduleStyle,
+            equipmentMode = EquipmentMode.BODYWEIGHT,
+            trackFocus = trackFocus,
+            shoulderRiskFlag = false,
+            heatRiskFlag = false
         )
 
         val fullProfile = profile.copy(

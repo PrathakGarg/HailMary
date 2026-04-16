@@ -4,6 +4,7 @@ import com.arise.habitquest.data.local.database.dao.ShadowDao
 import com.arise.habitquest.data.local.database.dao.UserProfileDao
 import com.arise.habitquest.data.mapper.UserProfileMapper
 import com.arise.habitquest.domain.model.HunterStats
+import com.arise.habitquest.domain.model.MissionCategory
 import com.arise.habitquest.domain.model.Rank
 import com.arise.habitquest.domain.model.UserProfile
 import com.arise.habitquest.domain.repository.UserRepository
@@ -51,6 +52,9 @@ class UserRepositoryImpl @Inject constructor(
 
     override suspend fun updateMissState(consecutiveMissDays: Int, pendingWarning: Boolean) =
         dao.updateMissState(consecutiveMissDays, pendingWarning)
+
+    override suspend fun updateProgressionState(state: String, transitionRecommendation: MissionCategory?) =
+        dao.updateProgressionState(state, transitionRecommendation?.name ?: "")
 
     override suspend fun updateRestDay(restDay: Int) = dao.updateRestDay(restDay)
 

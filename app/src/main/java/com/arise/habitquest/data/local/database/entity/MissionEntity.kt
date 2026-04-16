@@ -44,6 +44,10 @@ data class MissionEntity(
     // Category icon name (maps to Material icon name string)
     @ColumnInfo(name = "icon_name") val iconName: String = "fitness_center",
 
+    // Weekly progression metadata for PHYSICAL missions
+    @ColumnInfo(name = "physical_family") val physicalFamily: String = "UNSPECIFIED",
+    @ColumnInfo(name = "muscle_load_json") val muscleLoadJson: String = "{}",
+
     // True when the System injected this mission for all-round growth (not user's chosen goals)
     @ColumnInfo(name = "is_system_mandate") val isSystemMandate: Boolean = false
 )

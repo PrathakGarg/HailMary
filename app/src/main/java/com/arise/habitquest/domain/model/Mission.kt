@@ -58,7 +58,9 @@ data class Mission(
     val progressCurrent: Int = 0,
     val progressTarget: Int = 1,
     val iconName: String = "fitness_center",
-    val isSystemMandate: Boolean = false   // Injected by System for all-round growth
+    val isSystemMandate: Boolean = false,   // Injected by System for all-round growth
+    val physicalFamily: PhysicalMissionFamily = PhysicalMissionFamily.UNSPECIFIED,
+    val muscleLoad: Map<MuscleRegion, Float> = emptyMap()
 ) {
     val isActive: Boolean get() = !isCompleted && !isFailed && !isSkipped
     val progressPercent: Float get() = progressPercent(progressCurrent, progressTarget)

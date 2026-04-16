@@ -7,6 +7,8 @@ import androidx.work.WorkManager
 import com.arise.habitquest.data.local.datastore.OnboardingDataStore
 import com.arise.habitquest.data.time.TimeProvider
 import com.arise.habitquest.domain.model.FocusTheme
+import com.arise.habitquest.domain.model.MissionCategory
+import com.arise.habitquest.domain.model.ProgressionPreference
 import com.arise.habitquest.domain.model.UserProfile
 import com.arise.habitquest.domain.usecase.RegenerateCurrentMissionsUseCase
 import com.arise.habitquest.domain.repository.UserRepository
@@ -146,6 +148,34 @@ class SettingsViewModel @Inject constructor(
     fun setExcludeInboxMissions(exclude: Boolean) {
         viewModelScope.launch {
             dataStore.setExcludeInboxMissions(exclude)
+        }
+    }
+
+    fun setTrackFocus(category: MissionCategory) {
+        viewModelScope.launch {
+            val profile = _uiState.value.profile ?: return@launch
+            userRepository.upsertProfile(profile.copy(trackFocus = category))
+        }
+    }
+
+    fun setProgressionPreference(preference: ProgressionPreference) {
+        viewModelScope.launch {
+            val profile = _uiState.value.profile ?: return@launch
+            userRepository.upsertProfile(profile.copy(progressionPreference = preference))
+        }
+    }
+
+    fun setShoulderRiskFlag(enabled: Boolean) {
+        viewModelScope.launch {
+            val profile = _uiState.value.profile ?: return@launch
+            userRepository.upsertProfile(profile.copy(shoulderRiskFlag = enabled))
+        }
+    }
+
+    fun setHeatRiskFlag(enabled: Boolean) {
+        viewModelScope.launch {
+            val profile = _uiState.value.profile ?: return@launch
+            userRepository.upsertProfile(profile.copy(heatRiskFlag = enabled))
         }
     }
 

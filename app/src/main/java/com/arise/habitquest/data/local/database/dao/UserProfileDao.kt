@@ -46,6 +46,9 @@ interface UserProfileDao {
     @Query("UPDATE user_profile SET consecutive_miss_days = :count, pending_warning = :warning WHERE id = 1")
     suspend fun updateMissState(count: Int, warning: Boolean)
 
+    @Query("UPDATE user_profile SET progression_state = :state, transition_recommendation = :transitionRecommendation WHERE id = 1")
+    suspend fun updateProgressionState(state: String, transitionRecommendation: String)
+
     @Query("UPDATE user_profile SET rest_day = :restDay WHERE id = 1")
     suspend fun updateRestDay(restDay: Int)
 

@@ -1,6 +1,7 @@
 package com.arise.habitquest.domain.repository
 
 import com.arise.habitquest.domain.model.HunterStats
+import com.arise.habitquest.domain.model.MissionCategory
 import com.arise.habitquest.domain.model.Rank
 import com.arise.habitquest.domain.model.UserProfile
 import kotlinx.coroutines.flow.Flow
@@ -19,6 +20,7 @@ interface UserRepository {
     suspend fun updateAdaptiveDifficulty(difficulty: Float)
     suspend fun incrementDayCount()
     suspend fun updateMissState(consecutiveMissDays: Int, pendingWarning: Boolean)
+    suspend fun updateProgressionState(state: String, transitionRecommendation: MissionCategory?)
     suspend fun updateRestDay(restDay: Int)
     suspend fun updateNotificationHour(hour: Int)
     /** Returns map of templateId → total completions from shadow records */

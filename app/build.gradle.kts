@@ -125,6 +125,10 @@ dependencies {
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     androidTestImplementation(libs.uiautomator)
     androidTestImplementation(libs.workmanager.testing)
+
+    // JVM unit tests
+    testImplementation(libs.junit4)
+    testImplementation(libs.mockk)
 }
 
 fun resolveAdbExecutable(): String {

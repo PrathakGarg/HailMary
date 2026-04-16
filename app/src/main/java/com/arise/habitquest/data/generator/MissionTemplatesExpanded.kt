@@ -1,7 +1,9 @@
 package com.arise.habitquest.data.generator
 
 import com.arise.habitquest.domain.model.Difficulty
+import com.arise.habitquest.domain.model.MuscleRegion
 import com.arise.habitquest.domain.model.MissionCategory
+import com.arise.habitquest.domain.model.PhysicalMissionFamily
 import com.arise.habitquest.domain.model.Stat
 
 /**
@@ -26,7 +28,16 @@ object MissionTemplatesExpanded {
         penaltyXpBase = 20,
         penaltyHpBase = 10,
         iconName = "fitness_center",
-        scheduledTimeHint = "MORNING"
+        scheduledTimeHint = "MORNING",
+        physicalFamily = PhysicalMissionFamily.FULL_BODY,
+        muscleLoad = mapOf(
+            MuscleRegion.CARDIO_CONDITIONING to 0.35f,
+            MuscleRegion.QUADS to 0.2f,
+            MuscleRegion.CHEST to 0.15f,
+            MuscleRegion.SHOULDERS to 0.1f,
+            MuscleRegion.TRICEPS to 0.1f,
+            MuscleRegion.CORE to 0.1f
+        )
     )
 
     val pullUps = MissionTemplate(
@@ -43,7 +54,14 @@ object MissionTemplatesExpanded {
         penaltyXpBase = 18,
         penaltyHpBase = 9,
         iconName = "fitness_center",
-        scheduledTimeHint = "MORNING"
+        scheduledTimeHint = "MORNING",
+        physicalFamily = PhysicalMissionFamily.PULL,
+        muscleLoad = mapOf(
+            MuscleRegion.UPPER_BACK_LATS to 0.45f,
+            MuscleRegion.BICEPS to 0.25f,
+            MuscleRegion.SHOULDERS to 0.15f,
+            MuscleRegion.CORE to 0.15f
+        )
     )
 
     val yoga = MissionTemplate(
@@ -60,7 +78,16 @@ object MissionTemplatesExpanded {
         penaltyXpBase = 12,
         penaltyHpBase = 6,
         iconName = "self_improvement",
-        scheduledTimeHint = "MORNING"
+        scheduledTimeHint = "MORNING",
+        physicalFamily = PhysicalMissionFamily.MOBILITY_PREHAB,
+        muscleLoad = mapOf(
+            MuscleRegion.CORE to 0.2f,
+            MuscleRegion.SHOULDERS to 0.15f,
+            MuscleRegion.UPPER_BACK_LATS to 0.15f,
+            MuscleRegion.GLUTES to 0.15f,
+            MuscleRegion.QUADS to 0.15f,
+            MuscleRegion.HAMSTRINGS to 0.2f
+        )
     )
 
     val jumpRope = MissionTemplate(
@@ -76,7 +103,14 @@ object MissionTemplatesExpanded {
         statRewards = mapOf(Stat.AGI to 2, Stat.END to 1),
         penaltyXpBase = 15,
         penaltyHpBase = 7,
-        iconName = "directions_run"
+        iconName = "directions_run",
+        physicalFamily = PhysicalMissionFamily.CARDIO_NEAT,
+        muscleLoad = mapOf(
+            MuscleRegion.CARDIO_CONDITIONING to 0.5f,
+            MuscleRegion.CALVES to 0.25f,
+            MuscleRegion.QUADS to 0.15f,
+            MuscleRegion.CORE to 0.1f
+        )
     )
 
     val wallSit = MissionTemplate(
@@ -92,7 +126,14 @@ object MissionTemplatesExpanded {
         statRewards = mapOf(Stat.STR to 1, Stat.END to 2),
         penaltyXpBase = 12,
         penaltyHpBase = 6,
-        iconName = "accessibility_new"
+        iconName = "accessibility_new",
+        physicalFamily = PhysicalMissionFamily.LOWER_BODY,
+        muscleLoad = mapOf(
+            MuscleRegion.QUADS to 0.45f,
+            MuscleRegion.GLUTES to 0.25f,
+            MuscleRegion.CORE to 0.15f,
+            MuscleRegion.HAMSTRINGS to 0.15f
+        )
     )
 
     val hiitSession = MissionTemplate(
@@ -109,7 +150,16 @@ object MissionTemplatesExpanded {
         penaltyXpBase = 20,
         penaltyHpBase = 10,
         iconName = "sports_martial_arts",
-        scheduledTimeHint = "MORNING"
+        scheduledTimeHint = "MORNING",
+        physicalFamily = PhysicalMissionFamily.FULL_BODY,
+        muscleLoad = mapOf(
+            MuscleRegion.CARDIO_CONDITIONING to 0.45f,
+            MuscleRegion.QUADS to 0.15f,
+            MuscleRegion.GLUTES to 0.1f,
+            MuscleRegion.CORE to 0.1f,
+            MuscleRegion.CHEST to 0.1f,
+            MuscleRegion.SHOULDERS to 0.1f
+        )
     )
 
     val foamRolling = MissionTemplate(
@@ -126,7 +176,15 @@ object MissionTemplatesExpanded {
         penaltyXpBase = 8,
         penaltyHpBase = 4,
         iconName = "accessibility_new",
-        scheduledTimeHint = "EVENING"
+        scheduledTimeHint = "EVENING",
+        physicalFamily = PhysicalMissionFamily.RECOVERY_SUPPORT,
+        muscleLoad = mapOf(
+            MuscleRegion.QUADS to 0.2f,
+            MuscleRegion.HAMSTRINGS to 0.2f,
+            MuscleRegion.GLUTES to 0.2f,
+            MuscleRegion.UPPER_BACK_LATS to 0.2f,
+            MuscleRegion.SHOULDERS to 0.2f
+        )
     )
 
     val stairClimbing = MissionTemplate(
@@ -142,7 +200,15 @@ object MissionTemplatesExpanded {
         statRewards = mapOf(Stat.END to 1, Stat.AGI to 1),
         penaltyXpBase = 12,
         penaltyHpBase = 6,
-        iconName = "stairs"
+        iconName = "stairs",
+        physicalFamily = PhysicalMissionFamily.CARDIO_NEAT,
+        muscleLoad = mapOf(
+            MuscleRegion.CARDIO_CONDITIONING to 0.4f,
+            MuscleRegion.QUADS to 0.25f,
+            MuscleRegion.GLUTES to 0.15f,
+            MuscleRegion.CALVES to 0.1f,
+            MuscleRegion.HAMSTRINGS to 0.1f
+        )
     )
 
     // ── MENTAL (7) ────────────────────────────────────────────────────────────

@@ -6,9 +6,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.TrendingDown
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.TrendingDown
-import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -25,12 +25,18 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.arise.habitquest.data.local.database.entity.MissionTrackingLogEntity
 import com.arise.habitquest.domain.model.MissionCategory
+import com.arise.habitquest.presentation.progression.ProgramDirective
+import com.arise.habitquest.presentation.progression.ProgramDirectivesSection
 import com.arise.habitquest.ui.components.AriseTopBar
 import com.arise.habitquest.ui.components.CategoryRadarChart
 import com.arise.habitquest.ui.components.CategoryStats
 import com.arise.habitquest.ui.theme.*
+import java.time.Instant
 import java.time.LocalDate
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.Locale
 
@@ -86,6 +92,32 @@ fun HistoryScreen(
                 WeeklyXpChart(weeks = state.weeklyXp, modifier = Modifier.testTag("history_weekly_xp_chart"))
             }
 
+            // ── Body coverage chart (weekly) ────────────────────────────────
+            if (state.weeklyMuscleCoverage.any { it.assignedLoad > 0f }) {
+                SectionHeader("BODY COVERAGE — THIS WEEK")
+                WeeklyBodyCoverageChart(
+                    coverage = state.weeklyMuscleCoverage,
+                    modifier = Modifier.testTag("history_weekly_body_coverage")
+                )
+            }
+
+            if (state.directives.isNotEmpty()) {
+                SectionHeader("PROGRAM DIRECTIVES")
+                ProgramDirectivesSection(
+                    directives = state.directives,
+                    modifier = Modifier.testTag("history_program_directives"),
+                    tagPrefix = "history_program_directive"
+                )
+            }
+
+            if (state.recentTrackingLogs.isNotEmpty()) {
+                SectionHeader("TRACKED MISSION DATA")
+                TrackedMissionDataSection(
+                    entries = state.recentTrackingLogs,
+                    modifier = Modifier.testTag("history_tracked_data")
+                )
+            }
+
             // ── Analysis insights ─────────────────────────────────────────────
             if (state.insights.isNotEmpty()) {
                 SectionHeader("SYSTEM ANALYSIS")
@@ -126,6 +158,123 @@ fun HistoryScreen(
             }
 
             Spacer(Modifier.height(32.dp))
+        }
+    }
+}
+
+@Composable
+private fun TrackedMissionDataSection(
+    entries: List<MissionTrackingLogEntity>,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        entries.forEachIndexed { index, entry ->
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(BackgroundCard, RoundedCornerShape(10.dp))
+                    .border(1.dp, BorderDefault, RoundedCornerShape(10.dp))
+                    .padding(12.dp)
+                    .testTag("history_tracked_entry_$index")
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(
+                        entry.missionTitle,
+                        style = AriseTypography.titleSmall.copy(color = TextPrimary)
+                    )
+                    Text(
+                        "${entry.primaryLabel}: ${entry.primaryValue}",
+                        style = AriseTypography.bodyMedium.copy(color = GoldCore)
+                    )
+                    if (entry.secondaryValue.isNotBlank()) {
+                        Text(
+                            "${entry.secondaryLabel}: ${entry.secondaryValue}",
+                            style = AriseTypography.bodySmall.copy(color = TextSecondary)
+                        )
+                    }
+                    if (entry.notes.isNotBlank()) {
+                        Text(
+                            "Notes: ${entry.notes}",
+                            style = AriseTypography.bodySmall.copy(color = TextSecondary)
+                        )
+                    }
+                    Text(
+                        "Logged ${formatTrackedTimestamp(entry.createdAt)}",
+                        style = AriseTypography.labelSmall.copy(color = TextDim, fontSize = 10.sp)
+                    )
+                }
+            }
+        }
+    }
+}
+
+private fun formatTrackedTimestamp(epochMillis: Long): String {
+    val formatter = DateTimeFormatter.ofPattern("MMM d, HH:mm")
+    return Instant.ofEpochMilli(epochMillis)
+        .atZone(ZoneId.systemDefault())
+        .format(formatter)
+}
+
+@Composable
+internal fun ProgramDirectivesSection(
+    directives: List<ProgramDirective>,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        directives.forEachIndexed { index, directive ->
+            ProgramDirectiveCard(
+                directive = directive,
+                modifier = Modifier.testTag("history_program_directive_$index")
+            )
+        }
+    }
+}
+
+@Composable
+internal fun ProgramDirectiveCard(
+    directive: ProgramDirective,
+    modifier: Modifier = Modifier
+) {
+    val accent = if (directive.isWarning) CrimsonCore else BlueCore
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(BackgroundCard, RoundedCornerShape(10.dp))
+            .border(1.dp, accent.copy(alpha = 0.35f), RoundedCornerShape(10.dp))
+            .padding(14.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.Top
+    ) {
+        Box(
+            modifier = Modifier
+                .padding(top = 2.dp)
+                .size(10.dp)
+                .clip(CircleShape)
+                .background(accent)
+        )
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(
+                directive.label,
+                style = AriseTypography.labelSmall.copy(
+                    color = accent,
+                    fontSize = 9.sp,
+                    letterSpacing = 1.sp
+                )
+            )
+            Text(
+                directive.value,
+                style = AriseTypography.titleSmall.copy(color = TextPrimary)
+            )
+            Text(
+                directive.detail,
+                style = AriseTypography.bodySmall.copy(color = TextSecondary, fontSize = 11.sp)
+            )
         }
     }
 }
@@ -219,7 +368,6 @@ private fun CalendarHeatmap(days: List<DayEntry>, today: LocalDate, currentStrea
 
                 weeks.forEachIndexed { weekIndex, week ->
                     val firstOfWeek = week.firstOrNull()?.date
-                    // Check if this row contains a 1st-of-month cell
                     val monthStartEntry = week.firstOrNull { it.date.dayOfMonth == 1 }
                     val showMonthLabel = weekIndex > 0 && monthStartEntry != null
 
@@ -228,7 +376,6 @@ private fun CalendarHeatmap(days: List<DayEntry>, today: LocalDate, currentStrea
                         horizontalArrangement = Arrangement.spacedBy(4.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // Month label on left — show at month boundaries or first week
                         val weekLabel = when {
                             showMonthLabel ->
                                 monthStartEntry!!.date.month.getDisplayName(TextStyle.SHORT, Locale.getDefault()).take(3)
@@ -247,7 +394,7 @@ private fun CalendarHeatmap(days: List<DayEntry>, today: LocalDate, currentStrea
                         )
 
                         val paddedWeek = week + List(7 - week.size) { null }
-                        paddedWeek.forEachIndexed { dayIndex, entry ->
+                        paddedWeek.forEachIndexed { _, entry ->
                             val isToday = entry?.date == today
                             val isInStreak = entry?.date in streakDates
                             val isRestDay = entry?.wasRestDay == true
@@ -621,6 +768,83 @@ private fun WeeklyXpChart(weeks: List<Pair<String, Long>>, modifier: Modifier = 
 }
 
 @Composable
+internal fun WeeklyBodyCoverageChart(
+    coverage: List<MuscleCoverageEntry>,
+    modifier: Modifier = Modifier
+) {
+    val maxAssigned = coverage.maxOfOrNull { it.assignedLoad }?.takeIf { it > 0f } ?: 1f
+    val topRows = coverage
+        .filter { it.assignedLoad > 0f }
+        .sortedByDescending { it.assignedLoad }
+        .take(8)
+
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        topRows.forEach { row ->
+            val assignedFraction = (row.assignedLoad / maxAssigned).coerceIn(0.05f, 1f)
+            val completionFraction = row.completionRatio.coerceIn(0f, 1f)
+            val isUnderCovered = row.completionRatio < 0.45f
+
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = row.region.name
+                            .lowercase()
+                            .replace('_', ' ')
+                            .replaceFirstChar { it.uppercase() },
+                        style = AriseTypography.labelSmall.copy(
+                            color = if (isUnderCovered) CrimsonCore else TextSecondary,
+                            fontSize = 10.sp
+                        )
+                    )
+                    Text(
+                        text = "${(completionFraction * 100).toInt()}%",
+                        style = AriseTypography.labelSmall.copy(
+                            color = if (isUnderCovered) CrimsonCore else TextDim,
+                            fontSize = 9.sp
+                        )
+                    )
+                }
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(8.dp)
+                        .clip(RoundedCornerShape(3.dp))
+                        .background(BackgroundElevated)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .fillMaxWidth(assignedFraction)
+                            .clip(RoundedCornerShape(3.dp))
+                            .background(PurpleDim.copy(alpha = 0.45f))
+                    )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .fillMaxWidth((assignedFraction * completionFraction).coerceIn(0f, 1f))
+                            .clip(RoundedCornerShape(3.dp))
+                            .background(if (isUnderCovered) CrimsonCore.copy(alpha = 0.7f) else EmeraldCore.copy(alpha = 0.75f))
+                    )
+                }
+            }
+        }
+
+        Text(
+            "Purple = assigned load • Green/Red = completed load",
+            style = AriseTypography.labelSmall.copy(color = TextDim, fontSize = 9.sp)
+        )
+    }
+}
+
+@Composable
 private fun InsightCard(insight: AnalysisInsight, modifier: Modifier = Modifier) {
     Row(
         modifier = modifier
@@ -631,7 +855,7 @@ private fun InsightCard(insight: AnalysisInsight, modifier: Modifier = Modifier)
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Icon(
-            if (insight.isPositive) Icons.Filled.TrendingUp else Icons.Filled.TrendingDown,
+            if (insight.isPositive) Icons.AutoMirrored.Filled.TrendingUp else Icons.AutoMirrored.Filled.TrendingDown,
             contentDescription = null,
             tint = if (insight.isPositive) EmeraldCore else CrimsonCore,
             modifier = Modifier.size(20.dp)

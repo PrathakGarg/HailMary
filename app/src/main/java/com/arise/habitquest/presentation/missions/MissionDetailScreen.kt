@@ -8,18 +8,24 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.arise.habitquest.data.local.database.entity.MissionTrackingLogEntity
 import com.arise.habitquest.domain.model.Stat
 import com.arise.habitquest.ui.components.*
 import com.arise.habitquest.ui.theme.*
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 @Composable
 fun MissionDetailScreen(
@@ -49,6 +55,12 @@ fun MissionDetailScreen(
         if (state.deprioritizeError) {
             snackbarHostState.showSnackbar("Could not replace this mission right now.")
         }
+    }
+
+    LaunchedEffect(state.trackingMessage) {
+        val message = state.trackingMessage ?: return@LaunchedEffect
+        snackbarHostState.showSnackbar(message)
+        viewModel.consumeTrackingMessage()
     }
 
     val mission = state.mission ?: return
@@ -145,6 +157,28 @@ fun MissionDetailScreen(
                 Text(mission.description, style = AriseTypography.bodyMedium)
             }
 
+            if (state.trackingEnabled) {
+                SectionLabel("TRACK MISSION DATA")
+                MissionTrackingCard(
+                    primaryLabel = state.trackingPrimaryLabel,
+                    primaryHint = state.trackingPrimaryHint,
+                    secondaryLabel = state.trackingSecondaryLabel,
+                    secondaryHint = state.trackingSecondaryHint,
+                    primaryValue = state.trackingPrimaryValue,
+                    secondaryValue = state.trackingSecondaryValue,
+                    notes = state.trackingNotes,
+                    requiresNumericPrimary = state.trackingRequiresNumericPrimary,
+                    onPrimaryChanged = viewModel::onTrackingPrimaryChanged,
+                    onSecondaryChanged = viewModel::onTrackingSecondaryChanged,
+                    onNotesChanged = viewModel::onTrackingNotesChanged,
+                    onSave = viewModel::saveTrackingLog
+                )
+
+                if (state.trackingLogs.isNotEmpty()) {
+                    RecentTrackedEntries(entries = state.trackingLogs)
+                }
+            }
+
             // Rewards section
             SectionLabel("REWARDS")
             RewardCard(xpReward = mission.effectiveXpReward, statRewards = mission.statRewards)
@@ -167,6 +201,132 @@ fun MissionDetailScreen(
             }
         }
     }
+}
+
+@Composable
+private fun MissionTrackingCard(
+    primaryLabel: String,
+    primaryHint: String,
+    secondaryLabel: String,
+    secondaryHint: String,
+    primaryValue: String,
+    secondaryValue: String,
+    notes: String,
+    requiresNumericPrimary: Boolean,
+    onPrimaryChanged: (String) -> Unit,
+    onSecondaryChanged: (String) -> Unit,
+    onNotesChanged: (String) -> Unit,
+    onSave: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(10.dp))
+            .background(BlueCore.copy(alpha = 0.07f))
+            .border(1.dp, BlueCore.copy(alpha = 0.35f), RoundedCornerShape(10.dp))
+            .padding(12.dp)
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            OutlinedTextField(
+                value = primaryValue,
+                onValueChange = onPrimaryChanged,
+                label = { Text(primaryLabel) },
+                placeholder = { Text(primaryHint) },
+                singleLine = true,
+                keyboardOptions = if (requiresNumericPrimary) {
+                    KeyboardOptions(keyboardType = KeyboardType.Decimal)
+                } else {
+                    KeyboardOptions.Default
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("mission_tracking_primary")
+            )
+
+            OutlinedTextField(
+                value = secondaryValue,
+                onValueChange = onSecondaryChanged,
+                label = { Text(secondaryLabel) },
+                placeholder = { Text(secondaryHint) },
+                singleLine = true,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("mission_tracking_secondary")
+            )
+
+            OutlinedTextField(
+                value = notes,
+                onValueChange = onNotesChanged,
+                label = { Text("Notes (Optional)") },
+                placeholder = { Text("Anything worth remembering") },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("mission_tracking_notes")
+            )
+
+            Button(
+                onClick = onSave,
+                colors = ButtonDefaults.buttonColors(containerColor = BlueCore),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("mission_tracking_save")
+            ) {
+                Icon(Icons.Filled.Save, null, modifier = Modifier.size(16.dp))
+                Spacer(Modifier.width(6.dp))
+                Text("SAVE TRACKED DATA", style = AriseTypography.labelMedium)
+            }
+        }
+    }
+}
+
+@Composable
+private fun RecentTrackedEntries(entries: List<MissionTrackingLogEntity>) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(
+            "RECENT TRACKED ENTRIES",
+            style = AriseTypography.labelSmall.copy(color = TextDim, letterSpacing = 1.2.sp)
+        )
+        entries.forEach { entry ->
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(BackgroundCard)
+                    .border(1.dp, BorderDefault, RoundedCornerShape(10.dp))
+                    .padding(10.dp)
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(
+                        "${entry.primaryLabel}: ${entry.primaryValue}",
+                        style = AriseTypography.bodyMedium.copy(color = TextPrimary)
+                    )
+                    if (entry.secondaryValue.isNotBlank()) {
+                        Text(
+                            "${entry.secondaryLabel}: ${entry.secondaryValue}",
+                            style = AriseTypography.bodySmall.copy(color = TextSecondary)
+                        )
+                    }
+                    if (entry.notes.isNotBlank()) {
+                        Text(
+                            "Notes: ${entry.notes}",
+                            style = AriseTypography.bodySmall.copy(color = TextSecondary)
+                        )
+                    }
+                    Text(
+                        "Logged ${formatTrackingTimestamp(entry.createdAt)}",
+                        style = AriseTypography.labelSmall.copy(color = TextDim, fontSize = 10.sp)
+                    )
+                }
+            }
+        }
+    }
+}
+
+private fun formatTrackingTimestamp(epochMillis: Long): String {
+    val formatter = DateTimeFormatter.ofPattern("MMM d, HH:mm")
+    return Instant.ofEpochMilli(epochMillis)
+        .atZone(ZoneId.systemDefault())
+        .format(formatter)
 }
 
 @Composable

@@ -22,6 +22,30 @@ class MissionGenerator @Inject constructor(
     private val timeProvider: TimeProvider
 ) {
 
+    private val weeklyFamilyMinimums = mapOf(
+        PhysicalMissionFamily.PUSH to 1,
+        PhysicalMissionFamily.LOWER_BODY to 1,
+        PhysicalMissionFamily.CARDIO_NEAT to 1,
+        PhysicalMissionFamily.CORE_STABILITY to 1,
+        PhysicalMissionFamily.MOBILITY_PREHAB to 1
+    )
+
+    private val weeklyFamilyCaps = mapOf(
+        PhysicalMissionFamily.PUSH to 2,
+        PhysicalMissionFamily.PULL to 2,
+        PhysicalMissionFamily.LOWER_BODY to 3,
+        PhysicalMissionFamily.CARDIO_NEAT to 3,
+        PhysicalMissionFamily.CORE_STABILITY to 2,
+        PhysicalMissionFamily.MOBILITY_PREHAB to 2,
+        PhysicalMissionFamily.RECOVERY_SUPPORT to 2,
+        PhysicalMissionFamily.FULL_BODY to 2
+    )
+
+    private val defaultWeeklyCategoryCaps = mapOf(
+        MissionCategory.SOCIAL to 1,
+        MissionCategory.CREATIVITY to 1
+    )
+
     data class DailyTemplateSelection(
         val anchorIds: List<String>,
         val rotatingIds: List<String>
@@ -35,6 +59,17 @@ class MissionGenerator @Inject constructor(
         val stats = computeStartingStats(answers)
         val epithet = buildEpithet(answers.epithets)
         val title = computeTitle(answers)
+        val scheduleStyle = when {
+            answers.availableTime == AvailableTime.FLEXIBLE || answers.availableTime == AvailableTime.SCATTERED ->
+                ScheduleStyle.FLEXIBLE_SPLIT
+            else -> ScheduleStyle.FIXED_WINDOW
+        }
+        val progressionPreference = when (answers.startingDifficulty) {
+            StartingDifficulty.EASY -> ProgressionPreference.CONSERVATIVE
+            StartingDifficulty.HARD -> ProgressionPreference.AGGRESSIVE
+            else -> ProgressionPreference.ASSERTIVE_SAFE
+        }
+        val trackFocus = answers.goals.firstOrNull()?.primaryCategory ?: MissionCategory.PHYSICAL
         return UserProfile(
             hunterName = answers.hunterName,
             epithet = epithet,
@@ -50,7 +85,15 @@ class MissionGenerator @Inject constructor(
             notificationHour = answers.notificationHour,
             onboardingComplete = true,
             joinDate = timeProvider.sessionDay(),
-            adaptiveDifficulty = answers.startingDifficulty.factor
+            adaptiveDifficulty = answers.startingDifficulty.factor,
+            trackFocus = trackFocus,
+            equipmentMode = EquipmentMode.BODYWEIGHT,
+            scheduleStyle = scheduleStyle,
+            progressionPreference = progressionPreference,
+            shoulderRiskFlag = false,
+            heatRiskFlag = false,
+            progressionState = ProgressionState.PROGRESSING,
+            transitionRecommendation = null
         )
     }
 
@@ -69,6 +112,7 @@ class MissionGenerator @Inject constructor(
         return BossLoreBank.toBossMission(encounter, profile, weekEnd)
     }
 
+    @Suppress("UNUSED_PARAMETER")
     fun generatePenaltyZoneMission(profile: UserProfile): Mission {
         val todayStr = timeProvider.sessionDay()
         return Mission(
@@ -111,7 +155,7 @@ class MissionGenerator @Inject constructor(
 
         // If focus themes are active, potentially swap one template to better match them
         val effectiveIds = if (focusThemeNames.isNotEmpty()) {
-            injectFocusThemeTemplate(allowedTemplateIds, focusThemeNames, profile)
+            injectFocusThemeTemplate(allowedTemplateIds, focusThemeNames)
         } else allowedTemplateIds
 
         val templates = effectiveIds.mapNotNull { id ->
@@ -144,6 +188,10 @@ class MissionGenerator @Inject constructor(
         goalCategories: Set<MissionCategory>,
         date: LocalDate,
         recentTemplateIds: Set<String>,
+        weekToDateFamilyCounts: Map<PhysicalMissionFamily, Int> = emptyMap(),
+        weekToDateCategoryCounts: Map<MissionCategory, Int> = emptyMap(),
+        weekToDateFamilyMissCounts: Map<PhysicalMissionFamily, Int> = emptyMap(),
+        safetyThrottle: Boolean = false,
         focusThemeNames: Set<String> = emptySet(),
         excludedTemplateIds: Set<String> = emptySet()
     ): DailyTemplateSelection {
@@ -158,6 +206,15 @@ class MissionGenerator @Inject constructor(
         val targetCategories = buildTargetCategories(baseTemplates, goalCategories, focusThemeNames)
         val random = Random(date.toEpochDay() + profile.hunterName.hashCode().toLong())
 
+        val projectedWeekFamilyCounts = weekToDateFamilyCounts.toMutableMap()
+        val projectedWeekCategoryCounts = weekToDateCategoryCounts.toMutableMap()
+        if (anchor.category == MissionCategory.PHYSICAL) {
+            projectedWeekFamilyCounts[anchor.physicalFamily] =
+                (projectedWeekFamilyCounts[anchor.physicalFamily] ?: 0) + 1
+        }
+        projectedWeekCategoryCounts[anchor.category] =
+            (projectedWeekCategoryCounts[anchor.category] ?: 0) + 1
+
         val rotationPool = MissionTemplates.all
             .filter { template ->
                 template.id != anchor.id &&
@@ -165,13 +222,25 @@ class MissionGenerator @Inject constructor(
                     template.category in targetCategories
             }
 
+        val recentPhysicalFamilyCounts = recentTemplateIds
+            .mapNotNull { id -> MissionTemplates.all.find { it.id == id } }
+            .filter { it.category == MissionCategory.PHYSICAL }
+            .groupingBy { it.physicalFamily }
+            .eachCount()
+
         val preferredPool = rotationPool.filter { it.id !in recentTemplateIds }
         val rotating = pickRotatingTemplates(
             preferredPool = preferredPool,
             fallbackPool = rotationPool,
             targetCount = 4,
             random = random,
-            existingCategories = setOf(anchor.category)
+            existingCategories = setOf(anchor.category),
+            recentPhysicalFamilyCounts = recentPhysicalFamilyCounts,
+            weekToDateFamilyCounts = projectedWeekFamilyCounts,
+            weekToDateCategoryCounts = projectedWeekCategoryCounts,
+            trackFocus = profile.trackFocus,
+            weekToDateFamilyMissCounts = weekToDateFamilyMissCounts,
+            safetyThrottle = safetyThrottle
         )
 
         return DailyTemplateSelection(
@@ -296,8 +365,7 @@ class MissionGenerator @Inject constructor(
      */
     private fun injectFocusThemeTemplate(
         existing: List<String>,
-        themeNames: Set<String>,
-        profile: UserProfile
+        themeNames: Set<String>
     ): List<String> {
         val existingTemplates = existing.mapNotNull { id -> MissionTemplates.all.find { it.id == id } }
         val existingCategories = existingTemplates.map { it.category }.toSet()
@@ -361,20 +429,117 @@ class MissionGenerator @Inject constructor(
         fallbackPool: List<MissionTemplate>,
         targetCount: Int,
         random: Random,
-        existingCategories: Set<MissionCategory>
+        existingCategories: Set<MissionCategory>,
+        recentPhysicalFamilyCounts: Map<PhysicalMissionFamily, Int>,
+        weekToDateFamilyCounts: Map<PhysicalMissionFamily, Int>,
+        weekToDateCategoryCounts: Map<MissionCategory, Int>,
+        trackFocus: MissionCategory,
+        weekToDateFamilyMissCounts: Map<PhysicalMissionFamily, Int>,
+        safetyThrottle: Boolean
     ): List<MissionTemplate> {
         val selected = mutableListOf<MissionTemplate>()
         val usedCategories = existingCategories.toMutableSet()
+        val projectedWeekCounts = weekToDateFamilyCounts.toMutableMap()
+        val projectedWeekCategoryCounts = weekToDateCategoryCounts.toMutableMap()
 
-        fun shuffled(pool: List<MissionTemplate>): List<MissionTemplate> = pool.shuffled(random)
+        val effectiveCaps = weeklyFamilyCaps.toMutableMap().apply {
+            if (safetyThrottle) {
+                this[PhysicalMissionFamily.CARDIO_NEAT] = 2
+                this[PhysicalMissionFamily.FULL_BODY] = 1
+                this[PhysicalMissionFamily.MOBILITY_PREHAB] = 3
+                this[PhysicalMissionFamily.RECOVERY_SUPPORT] = 3
+            }
+        }
+
+        val effectiveCategoryCaps = defaultWeeklyCategoryCaps.toMutableMap()
+
+        val categoryMinimums = when (trackFocus) {
+            MissionCategory.PRODUCTIVITY -> mapOf(
+                MissionCategory.PRODUCTIVITY to 2,
+                MissionCategory.WELLNESS to 1
+            )
+            MissionCategory.WELLNESS -> mapOf(
+                MissionCategory.WELLNESS to 2,
+                MissionCategory.MENTAL to 1
+            )
+            MissionCategory.MENTAL -> mapOf(
+                MissionCategory.MENTAL to 2,
+                MissionCategory.WELLNESS to 1
+            )
+            else -> mapOf(
+                MissionCategory.WELLNESS to 1
+            )
+        }
+
+        fun isFamilyAtCap(template: MissionTemplate): Boolean {
+            if (template.category != MissionCategory.PHYSICAL) return false
+            val current = projectedWeekCounts[template.physicalFamily] ?: 0
+            val cap = effectiveCaps[template.physicalFamily] ?: Int.MAX_VALUE
+            return current >= cap
+        }
+
+        fun isCategoryAtCap(template: MissionTemplate): Boolean {
+            val current = projectedWeekCategoryCounts[template.category] ?: 0
+            val cap = effectiveCategoryCaps[template.category] ?: Int.MAX_VALUE
+            return current >= cap
+        }
+
+        fun familyPriorityBand(template: MissionTemplate): Int {
+            if (template.category != MissionCategory.PHYSICAL) return 1
+            val current = projectedWeekCounts[template.physicalFamily] ?: 0
+            val floor = weeklyFamilyMinimums[template.physicalFamily] ?: 0
+            return if (current < floor) 0 else 1
+        }
+
+        fun categoryPriorityBand(template: MissionTemplate): Int {
+            val floor = categoryMinimums[template.category] ?: return 1
+            val current = projectedWeekCategoryCounts[template.category] ?: 0
+            return if (current < floor) 0 else 1
+        }
+
+        fun familyBalanced(pool: List<MissionTemplate>): List<MissionTemplate> {
+            return pool.shuffled(random).sortedWith(
+                compareBy<MissionTemplate>(
+                    { categoryPriorityBand(it) },
+                    { familyPriorityBand(it) },
+                    {
+                        if (it.category == MissionCategory.PHYSICAL)
+                            -(weekToDateFamilyMissCounts[it.physicalFamily] ?: 0)
+                        else 0
+                    },
+                    {
+                        if (it.category == MissionCategory.PHYSICAL)
+                            projectedWeekCounts[it.physicalFamily] ?: 0
+                        else 0
+                    },
+                    {
+                        if (it.category == MissionCategory.PHYSICAL)
+                            recentPhysicalFamilyCounts[it.physicalFamily] ?: 0
+                        else 0
+                    }
+                )
+            )
+        }
+
+        fun onSelected(template: MissionTemplate) {
+            if (template.category == MissionCategory.PHYSICAL) {
+                projectedWeekCounts[template.physicalFamily] =
+                    (projectedWeekCounts[template.physicalFamily] ?: 0) + 1
+            }
+            projectedWeekCategoryCounts[template.category] =
+                (projectedWeekCategoryCounts[template.category] ?: 0) + 1
+        }
 
         fun takeFrom(pool: List<MissionTemplate>, preferNewCategories: Boolean) {
-            for (candidate in shuffled(pool)) {
+            for (candidate in familyBalanced(pool)) {
                 if (selected.size >= targetCount) return
                 if (selected.any { it.id == candidate.id }) continue
+                if (isFamilyAtCap(candidate)) continue
+                if (isCategoryAtCap(candidate)) continue
                 if (preferNewCategories && candidate.category in usedCategories) continue
                 selected += candidate
                 usedCategories += candidate.category
+                onSelected(candidate)
             }
         }
 
@@ -471,7 +636,9 @@ class MissionGenerator @Inject constructor(
             streakCount = streakCount,
             isRecurring = true,
             parentTemplateId = template.id,
-            iconName = template.iconName
+            iconName = template.iconName,
+            physicalFamily = template.physicalFamily,
+            muscleLoad = template.muscleLoad
         )
     }
 

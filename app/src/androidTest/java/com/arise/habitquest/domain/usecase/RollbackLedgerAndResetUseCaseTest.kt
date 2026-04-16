@@ -423,6 +423,11 @@ class RollbackLedgerAndResetUseCaseTest {
             flow.value = profile
         }
 
+        override suspend fun updateProgressionState(
+            state: String,
+            transitionRecommendation: com.arise.habitquest.domain.model.MissionCategory?
+        ) = Unit
+
         override suspend fun updateRestDay(restDay: Int) {
             profile = profile.copy(restDay = restDay)
             flow.value = profile

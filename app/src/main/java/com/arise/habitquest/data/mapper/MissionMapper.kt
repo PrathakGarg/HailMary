@@ -35,7 +35,11 @@ class MissionMapper @Inject constructor() {
             progressCurrent = entity.progressCurrent,
             progressTarget = entity.progressTarget,
             iconName = entity.iconName,
-            isSystemMandate = entity.isSystemMandate
+            isSystemMandate = entity.isSystemMandate,
+            physicalFamily = runCatching {
+                PhysicalMissionFamily.valueOf(entity.physicalFamily)
+            }.getOrDefault(PhysicalMissionFamily.UNSPECIFIED),
+            muscleLoad = parseMuscleLoad(entity.muscleLoadJson)
         )
     }
 
@@ -64,6 +68,8 @@ class MissionMapper @Inject constructor() {
         progressCurrent = domain.progressCurrent,
         progressTarget = domain.progressTarget,
         iconName = domain.iconName,
+        physicalFamily = domain.physicalFamily.name,
+        muscleLoadJson = encodeMuscleLoad(domain.muscleLoad),
         isSystemMandate = domain.isSystemMandate
     )
 
@@ -81,6 +87,24 @@ class MissionMapper @Inject constructor() {
     private fun encodeStatRewards(rewards: Map<Stat, Int>): String {
         val obj = buildJsonObject {
             rewards.forEach { (stat, amount) -> put(stat.name, amount) }
+        }
+        return obj.toString()
+    }
+
+    private fun parseMuscleLoad(json: String): Map<MuscleRegion, Float> {
+        return try {
+            val obj = Json.parseToJsonElement(json).jsonObject
+            obj.entries.associate { (key, value) ->
+                MuscleRegion.valueOf(key) to value.jsonPrimitive.float
+            }
+        } catch (e: Exception) {
+            emptyMap()
+        }
+    }
+
+    private fun encodeMuscleLoad(load: Map<MuscleRegion, Float>): String {
+        val obj = buildJsonObject {
+            load.forEach { (region, weight) -> put(region.name, weight) }
         }
         return obj.toString()
     }

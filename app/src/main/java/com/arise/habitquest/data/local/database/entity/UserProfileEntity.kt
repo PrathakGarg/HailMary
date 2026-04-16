@@ -37,6 +37,15 @@ data class UserProfileEntity(
     @ColumnInfo(name = "grace_uses_remaining") val graceUsesRemaining: Int = 3,
     @ColumnInfo(name = "adaptive_difficulty") val adaptiveDifficulty: Float = 1.0f,
 
+    @ColumnInfo(name = "track_focus") val trackFocus: String = "PHYSICAL",
+    @ColumnInfo(name = "equipment_mode") val equipmentMode: String = "BODYWEIGHT",
+    @ColumnInfo(name = "schedule_style") val scheduleStyle: String = "FIXED_WINDOW",
+    @ColumnInfo(name = "shoulder_risk_flag") val shoulderRiskFlag: Boolean = false,
+    @ColumnInfo(name = "heat_risk_flag") val heatRiskFlag: Boolean = false,
+    @ColumnInfo(name = "progression_preference") val progressionPreference: String = "ASSERTIVE_SAFE",
+    @ColumnInfo(name = "progression_state") val progressionState: String = "PROGRESSING",
+    @ColumnInfo(name = "transition_recommendation") val transitionRecommendation: String = "",
+
     @ColumnInfo(name = "rest_day") val restDay: Int = 6, // ISO DayOfWeek ordinal: MONDAY=0 … SUNDAY=6
     @ColumnInfo(name = "notification_hour") val notificationHour: Int = 8,
     @ColumnInfo(name = "notification_evening_hour") val notificationEveningHour: Int = 20,
