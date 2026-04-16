@@ -14,6 +14,7 @@ import com.arise.habitquest.domain.usecase.CompleteMissionUseCase
 import com.arise.habitquest.domain.usecase.CompletionResult
 import com.arise.habitquest.domain.usecase.FailMissionUseCase
 import com.arise.habitquest.domain.usecase.ResetMissionOutcomeUseCase
+import com.arise.habitquest.domain.usecase.policy.RestDayPolicy
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
@@ -24,6 +25,7 @@ import javax.inject.Inject
 data class HomeUiState(
     val profile: UserProfile? = null,
     val todayMissions: List<Mission> = emptyList(),
+    val isRestDay: Boolean = false,
     val systemMessage: String = "",
     val lastCompletionResult: CompletionResult? = null,
     val showSystemNotification: Boolean = false,
@@ -72,7 +74,11 @@ class HomeViewModel @Inject constructor(
     private fun observeProfile() {
         viewModelScope.launch {
             userRepository.observeUserProfile().collect { profile ->
-                _uiState.update { it.copy(profile = profile, isLoading = false) }
+                val currentDate = _uiState.value.currentDate
+                val restDay = if (currentDate != LocalDate.MIN && profile != null) {
+                    RestDayPolicy.isRestDay(currentDate, profile.restDay)
+                } else _uiState.value.isRestDay
+                _uiState.update { it.copy(profile = profile, isLoading = false, isRestDay = restDay) }
             }
         }
     }
@@ -89,6 +95,9 @@ class HomeViewModel @Inject constructor(
                 _uiState.update { it.copy(minutesUntilReset = mins) }
                 if (sessionDay != currentSessionDate) {
                     currentSessionDate = sessionDay
+                    // Determine if today is a rest day via policy
+                    val restDayOrdinal = _uiState.value.profile?.restDay ?: 6
+                    val restDay = RestDayPolicy.isRestDay(sessionDay, restDayOrdinal)
                     val previousLog = dailyLogDao.getLogForDate(sessionDay.minusDays(1).toString())
                     val previousDaySummary = previousLog?.let { log ->
                         PreviousDaySummary(
@@ -100,7 +109,7 @@ class HomeViewModel @Inject constructor(
                             wasRestDay = log.wasRestDay
                         )
                     }
-                    _uiState.update { it.copy(currentDate = sessionDay, previousDaySummary = previousDaySummary) }
+                    _uiState.update { it.copy(currentDate = sessionDay, previousDaySummary = previousDaySummary, isRestDay = restDay) }
                     missionJob?.cancel()
                     missionJob = launch {
                         missionRepository.observeMissionsForDate(sessionDay).collect { missions ->

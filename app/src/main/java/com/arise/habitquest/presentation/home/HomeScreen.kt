@@ -115,7 +115,11 @@ fun HomeScreen(
                 Spacer(Modifier.height(8.dp))
 
                 if (state.todayMissions.isEmpty()) {
-                    EmptyGatesCard()
+                    if (state.isRestDay) {
+                        EmptyGatesCard()
+                    } else {
+                        AwaitingGatesCard()
+                    }
                 } else {
                     LazyRow(
                         contentPadding = PaddingValues(horizontal = 20.dp),
@@ -293,6 +297,33 @@ fun EmptyGatesCard() {
             Text("REST DAY", style = AriseTypography.labelLarge.copy(color = TextSecondary))
             Text(
                 "The System grants you respite. Recover your strength.",
+                style = SystemTextStyle,
+                textAlign = TextAlign.Center
+            )
+        }
+    }
+}
+
+@Composable
+fun AwaitingGatesCard() {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .background(BackgroundCard)
+            .border(1.dp, BorderDefault, RoundedCornerShape(16.dp))
+            .padding(32.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text("◈", style = AriseTypography.displaySmall.copy(color = PurpleDim))
+            Text("AWAITING GATES", style = AriseTypography.labelLarge.copy(color = TextSecondary))
+            Text(
+                "No missions assigned yet. Gates will open at daily reset.",
                 style = SystemTextStyle,
                 textAlign = TextAlign.Center
             )
